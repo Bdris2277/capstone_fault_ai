@@ -1,0 +1,9 @@
+{
+  "poll_interval_s": 0.25,
+  "meters": [
+    { "id": "Wind", "ip": "192.168.168.11", "enabled": true, "port": 502, "unit_id": 1, "timeout_s": 3 },
+    { "id": "BalancePoint", "ip": "192.168.168.26", "enabled": true, "port": 502, "unit_id": 1, "timeout_s": 3 },
+    { "id": "ConsumerII", "ip": "192.168.168.31", "enabled": true, "port": 502, "unit_id": 1, "timeout_s": 3 },
+    { "id": "PhotoVoltaic", "ip": "192.168.168.110", "enabled": true, "port": 502, "unit_id": 1, "timeout_s": 3 }
+  ]
+}

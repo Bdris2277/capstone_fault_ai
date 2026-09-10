@@ -1,0 +1,18 @@
+# Offline requirements for NVIDIA Jetson (no internet).
+#
+# How it works:
+# - Put pre-downloaded wheels into: offline/wheels/
+# - Then install with:
+#     python -m pip install --no-index --find-links offline/wheels -r offline/requirements_jetson.txt
+#
+# Notes:
+# - torch is JetPack-specific. Download the correct Jetson wheel separately and either:
+#   - add it to offline/wheels/ and add "torch==<version>" here, or
+#   - install it manually before running training/inference.
+
+numpy
+pandas
+scikit-learn
+joblib
+pymodbus
+
