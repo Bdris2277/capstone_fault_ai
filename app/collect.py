@@ -123,9 +123,6 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     
     print(f"Collecting from {len(enabled_meters)} meter(s): {', '.join(m.id for m in enabled_meters)}\n")
-    
-    # Replace meters list with only enabled ones
-    meters_cfg.meters = enabled_meters
 
     # Validate pipeline
     if pipeline.modbus.count % 2 != 0:
@@ -144,12 +141,12 @@ def main(argv: list[str] | None = None) -> int:
     out_csv = _get_next_filename(out_csv)
 
     # Track per-meter state
-    runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters_cfg.meters}
+    runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in enabled_meters}
 
     # Connect to all meters
     clients: dict[str, ModbusTcpClient] = {}
     try:
-        for meter in meters_cfg.meters:
+        for meter in enabled_meters:
             client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
             if not client.connect():
                 print(f"WARNING: Failed to connect to {meter.id} ({meter.ip}:{meter.port})")
@@ -165,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
 
-            for meter in meters_cfg.meters:
+            for meter in enabled_meters:
                 # Poll meter data
                 raw_values = poll_holding_registers(
                     clients[meter.id],
@@ -218,16 +215,3 @@ def main(argv: list[str] | None = None) -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 
-
-
-Traceback (most recent call last):
-  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 173, in <module>
-    main()
-  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 160, in main
-    cmd_collect()
-  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 82, in cmd_collect
-    collect_main([
-  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/collect.py", line 128, in main
-    meters_cfg.meters = enabled_meters
-  File "<string>", line 4, in __setattr__
-dataclasses.FrozenInstanceError: cannot assign to field 'meters'
