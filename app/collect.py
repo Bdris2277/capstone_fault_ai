@@ -25,6 +25,28 @@ class MeterRuntime:
     per_unit: PerUnitState
 
 
+def _get_next_filename(base_path: Path) -> Path:
+    """Find the next available filename by incrementing a counter.
+    
+    For example, if base_path is 'data_out/collected.csv', this will return
+    'data_out/collected1.csv', 'data_out/collected2.csv', etc.
+    """
+    base_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Extract the stem (filename without extension) and extension
+    stem = base_path.stem
+    suffix = base_path.suffix
+    parent = base_path.parent
+    
+    # Find the highest existing number
+    counter = 1
+    while True:
+        candidate = parent / f"{stem}{counter}{suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
 def _open_writer(path: Path, *, header: list[str], append: bool) -> tuple[csv.writer, object]:
     path.parent.mkdir(parents=True, exist_ok=True)
     file_exists = path.exists()
@@ -110,6 +132,10 @@ def main(argv: list[str] | None = None) -> int:
     runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters_cfg.meters}
 
     out_csv = Path(args.out_csv)
+    # Auto-increment filename if not appending
+    if not args.append and not args.split_by_meter:
+        out_csv = _get_next_filename(out_csv)
+    
     out_dir = Path(args.out_dir)
 
     writers: dict[str, csv.writer] = {}
