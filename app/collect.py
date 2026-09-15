@@ -217,3 +217,17 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+Traceback (most recent call last):
+  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 173, in <module>
+    main()
+  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 160, in main
+    cmd_collect()
+  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/run.py", line 82, in cmd_collect
+    collect_main([
+  File "/home/user/Documents/Git Repos/ai_fault_BTWS/capstone_fault_ai/app/collect.py", line 128, in main
+    meters_cfg.meters = enabled_meters
+  File "<string>", line 4, in __setattr__
+dataclasses.FrozenInstanceError: cannot assign to field 'meters'
