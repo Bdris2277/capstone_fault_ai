@@ -1,7 +1,6 @@
 {
   "poll_interval_s": 0.25,
   "meters": [
-    // Change T/F to enable/disable meters
     { "id": "Wind",         "ip": "192.168.168.11",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true },
     { "id": "BalancePoint", "ip": "192.168.168.26",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true },
     { "id": "ConsumerII",   "ip": "192.168.168.31",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true },
