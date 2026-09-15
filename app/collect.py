@@ -22,152 +22,134 @@ from capstone_fault_ai.app import user_params
 
 @dataclass
 class MeterRuntime:
+    """Tracks per-meter state during data collection."""
     per_unit: PerUnitState
 
 
 def _get_next_filename(base_path: Path) -> Path:
-    """Find the next available filename by incrementing a counter.
-    
-    For example, if base_path is 'data_out/collected.csv', this will return
-    'data_out/collected1.csv', 'data_out/collected2.csv', etc.
-    """
+    """Auto-increment filename: collected.csv → collected1.csv → collected2.csv → etc."""
     base_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Extract the stem (filename without extension) and extension
+    # If base file doesn't exist, use it
+    if not base_path.exists():
+        return base_path
+    
+    # Otherwise, find the next numbered version
     stem = base_path.stem
     suffix = base_path.suffix
-    parent = base_path.parent
-    
-    # Find the highest existing number
     counter = 1
-    while True:
-        candidate = parent / f"{stem}{counter}{suffix}"
-        if not candidate.exists():
-            return candidate
+    while (base_path.parent / f"{stem}{counter}{suffix}").exists():
         counter += 1
+    return base_path.parent / f"{stem}{counter}{suffix}"
 
 
-def _open_writer(path: Path, *, header: list[str], append: bool) -> tuple[csv.writer, object]:
+def _create_csv_writer(path: Path, header: list[str]) -> tuple[csv.writer, object]:
+    """Open a CSV file and return the writer and file object."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = path.exists()
-
-    file = open(path, "a" if append else "w", newline="", encoding="utf-8")
+    file = open(path, "w", newline="", encoding="utf-8")
     writer = csv.writer(file)
-    if (not append) or (not file_exists):
-        writer.writerow(header)
-        file.flush()
+    writer.writerow(header)
+    file.flush()
     return writer, file
 
 
+def _process_meter_data(meter, raw_values, pipeline, runtime, class_label, include_meter_id: bool):
+    """Extract and validate meter data, return a CSV row or None if invalid."""
+    # Select features and check size
+    features = select_features(raw_values, drop_indices_0_based=pipeline.features.drop_indices_0_based)
+    if features.shape[0] != len(pipeline.features.names):
+        return None
+    
+    # Apply per-unit normalization if enabled
+    if pipeline.per_unit.enabled:
+        baseline = runtime.per_unit.update_and_get_baseline(
+            features, baseline_samples=pipeline.per_unit.baseline_samples
+        )
+        if baseline is None:
+            return None
+        features = to_per_unit(
+            features,
+            per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
+            baseline=baseline,
+        )
+    
+    # Skip invalid data
+    if not np.isfinite(features).all():
+        return None
+    
+    # Format row
+    feature_strs = [f"{v:.6g}" for v in features.tolist()]
+    if include_meter_id:
+        return [int(class_label), meter.id, *feature_strs]
+    else:
+        return [int(class_label), *feature_strs]
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Poll Modbus-TCP meters and write labeled training rows (class + features) to CSV."
-    )
-    parser.add_argument("--meters_json", default=user_params.METERS_JSON)
-    parser.add_argument("--pipeline_json", default=user_params.PIPELINE_JSON)
-    parser.add_argument(
-        "--meter_ids",
-        default="",
-        help="Comma-separated meter IDs to poll (default: all meters from meters_json).",
-    )
-    parser.add_argument(
-        "--class_label",
-        type=int,
-        default=None,
-        help="Integer class ID to write into the CSV. Defaults to app/user_params.py:COLLECT_CLASS_LABEL.",
-    )
-    parser.add_argument("--out_csv", default=user_params.COLLECT_OUT_CSV)
-    parser.add_argument("--duration_s", type=float, default=30.0, help="How long to collect data (seconds).")
-    parser.add_argument("--append", action="store_true", help="Append to out_csv if it exists (keep header).")
-    parser.add_argument(
-        "--include_meter_id",
-        action="store_true",
-        help="Add a meter_id column to the output (train.py will ignore non-numeric columns).",
-    )
-    parser.add_argument(
-        "--split_by_meter",
-        action="store_true",
-        help="Write one CSV per meter under out_dir (ignores out_csv filename).",
-    )
-    parser.add_argument(
-        "--out_dir",
-        default="data_out",
-        help="Used with --split_by_meter; files will be named <meter_id>.csv",
-    )
+    """
+    Poll Modbus meters and collect labeled sensor data to CSV.
+    
+    Usage:
+        python collect.py --class_label 0 --duration_s 30
+    """
+    parser = argparse.ArgumentParser(description="Collect labeled meter data to CSV.")
+    parser.add_argument("--meters_json", default=user_params.METERS_JSON, help="Meter config file")
+    parser.add_argument("--pipeline_json", default=user_params.PIPELINE_JSON, help="Pipeline config file")
+    parser.add_argument("--class_label", type=int, default=None, help="Class label for this data (0, 1, 2, etc)")
+    parser.add_argument("--out_csv", default=user_params.COLLECT_OUT_CSV, help="Output CSV file")
+    parser.add_argument("--duration_s", type=float, default=30.0, help="Collect duration in seconds")
+    parser.add_argument("--include_meter_id", action="store_true", help="Add meter_id column to CSV")
     args = parser.parse_args(argv)
 
-    try:
-        from pymodbus.client import ModbusTcpClient
-    except ModuleNotFoundError:
-        print("Missing dependency: pymodbus. Install requirements first.")
-        return 2
-
+    # Set default class label
     if args.class_label is None:
         args.class_label = int(user_params.COLLECT_CLASS_LABEL)
 
+    # Load configuration
     meters_cfg = load_meters_config(args.meters_json)
     pipeline = load_pipeline_config(args.pipeline_json)
 
-    selected_ids: set[str] | None = None
-    if str(args.meter_ids).strip():
-        selected_ids = {s.strip() for s in str(args.meter_ids).split(",") if s.strip()}
-        known_ids = {m.id for m in meters_cfg.meters}
-        missing = sorted(selected_ids - known_ids)
-        if missing:
-            print(f"Unknown meter_ids in --meter_ids: {', '.join(missing)}")
-            print(f"Known meter IDs: {', '.join(sorted(known_ids))}")
-            return 2
-        meters_cfg = type(meters_cfg)(
-            poll_interval_s=meters_cfg.poll_interval_s,
-            meters=[m for m in meters_cfg.meters if m.id in selected_ids],
-        )
-
+    # Validate pipeline
     if pipeline.modbus.count % 2 != 0:
-        raise ValueError("pipeline.modbus.count must be even (register pairs decode into float32 values).")
+        print("ERROR: pipeline.modbus.count must be even")
+        return 2
 
+    # Prepare CSV header
     feature_names = pipeline.features.names
-    input_size = len(feature_names)
-    header = ["class", "meter_id", *feature_names] if args.include_meter_id else ["class", *feature_names]
+    if args.include_meter_id:
+        header = ["class", "meter_id", *feature_names]
+    else:
+        header = ["class", *feature_names]
 
+    # Prepare output file
+    out_csv = Path(args.out_csv)
+    out_csv = _get_next_filename(out_csv)
+
+    # Track per-meter state
     runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters_cfg.meters}
 
-    out_csv = Path(args.out_csv)
-    # Auto-increment filename if not appending
-    if not args.append and not args.split_by_meter:
-        out_csv = _get_next_filename(out_csv)
-    
-    out_dir = Path(args.out_dir)
-
-    writers: dict[str, csv.writer] = {}
-    files: dict[str, object] = {}
-
+    # Connect to all meters
     clients: dict[str, ModbusTcpClient] = {}
     try:
         for meter in meters_cfg.meters:
             client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
-            client.connect()
+            if not client.connect():
+                print(f"WARNING: Failed to connect to {meter.id} ({meter.ip}:{meter.port})")
             clients[meter.id] = client
 
-        if args.split_by_meter:
-            for meter in meters_cfg.meters:
-                path = out_dir / f"{meter.id}.csv"
-                writer, file = _open_writer(path, header=header, append=args.append)
-                writers[meter.id] = writer
-                files[meter.id] = file
-        else:
-            writer, file = _open_writer(out_csv, header=header, append=args.append)
-            for meter in meters_cfg.meters:
-                writers[meter.id] = writer
-            files["_shared"] = file
+        # Open CSV writer
+        writer, csv_file = _create_csv_writer(out_csv, header)
 
-        deadline = time.monotonic() + max(float(args.duration_s), 0.0)
+        # Collect data for specified duration
+        deadline = time.monotonic() + args.duration_s
         rows_written = 0
 
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
 
             for meter in meters_cfg.meters:
-                raw = poll_holding_registers(
+                # Poll meter data
+                raw_values = poll_holding_registers(
                     clients[meter.id],
                     ip=meter.ip,
                     unit_id=meter.unit_id,
@@ -175,67 +157,44 @@ def main(argv: list[str] | None = None) -> int:
                     count=pipeline.modbus.count,
                     float_endianness=pipeline.decode.float_endianness,
                 )
-                if raw is None:
+                if raw_values is None:
                     continue
 
-                features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
-                if features.shape[0] != input_size:
-                    print(f"[{meter.id}] feature_size={features.shape[0]} expected={input_size}")
+                # Process and format data
+                row = _process_meter_data(
+                    meter, raw_values, pipeline,
+                    runtimes[meter.id],
+                    args.class_label,
+                    args.include_meter_id
+                )
+                if row is None:
                     continue
 
-                if pipeline.per_unit.enabled:
-                    baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
-                        features,
-                        baseline_samples=pipeline.per_unit.baseline_samples,
-                    )
-                    if baseline is None:
-                        continue
-                    features = to_per_unit(
-                        features,
-                        per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
-                        baseline=baseline,
-                    )
-
-                if not np.isfinite(features).all():
-                    continue
-
-                if args.include_meter_id:
-                    row = [int(args.class_label), meter.id, *[f"{v:.6g}" for v in features.tolist()]]
-                else:
-                    row = [int(args.class_label), *[f"{v:.6g}" for v in features.tolist()]]
-                writers[meter.id].writerow(row)
+                # Write row
+                writer.writerow(row)
                 rows_written += 1
 
-            for file in files.values():
-                try:
-                    file.flush()
-                except Exception:
-                    pass
-
+            # Flush and pace polling
+            csv_file.flush()
             elapsed = time.monotonic() - loop_start
             sleep_s = meters_cfg.poll_interval_s - elapsed
             if sleep_s > 0:
                 time.sleep(sleep_s)
 
-        print(f"Wrote {rows_written} rows.")
-        if args.split_by_meter:
-            print(f"Output dir: {out_dir}")
-        else:
-            print(f"Output file: {out_csv}")
+        print(f"✓ Wrote {rows_written} rows to {out_csv}")
+        return 0
 
     finally:
+        # Cleanup
         for client in clients.values():
             try:
                 client.close()
             except Exception:
                 pass
-        for file in files.values():
-            try:
-                file.close()
-            except Exception:
-                pass
-
-    return 0
+        try:
+            csv_file.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
