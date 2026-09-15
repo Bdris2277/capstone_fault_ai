@@ -116,6 +116,17 @@ def main(argv: list[str] | None = None) -> int:
     meters_cfg = load_meters_config(args.meters_json)
     pipeline = load_pipeline_config(args.pipeline_json)
 
+    # Filter to only enabled meters
+    enabled_meters = [m for m in meters_cfg.meters if getattr(m, 'enabled', True)]
+    if not enabled_meters:
+        print("ERROR: No enabled meters in meters.json (set 'enabled': true)")
+        return 2
+    
+    print(f"Collecting from {len(enabled_meters)} meter(s): {', '.join(m.id for m in enabled_meters)}\n")
+    
+    # Replace meters list with only enabled ones
+    meters_cfg.meters = enabled_meters
+
     # Validate pipeline
     if pipeline.modbus.count % 2 != 0:
         print("ERROR: pipeline.modbus.count must be even")
