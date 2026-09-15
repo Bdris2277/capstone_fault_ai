@@ -92,6 +92,13 @@ def main(argv: list[str] | None = None) -> int:
     Usage:
         python collect.py --class_label 0 --duration_s 30
     """
+    # Import early so it's available for the whole function
+    try:
+        from pymodbus.client import ModbusTcpClient
+    except ModuleNotFoundError:
+        print("ERROR: pymodbus not installed. Run: pip install -r requirements.txt")
+        return 2
+    
     parser = argparse.ArgumentParser(description="Collect labeled meter data to CSV.")
     parser.add_argument("--meters_json", default=user_params.METERS_JSON, help="Meter config file")
     parser.add_argument("--pipeline_json", default=user_params.PIPELINE_JSON, help="Pipeline config file")
