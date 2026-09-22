@@ -11,205 +11,285 @@ Duration: 10.0s
 ✓ Connected to BalancePoint
 ✓ Connected to PhotoVoltaic
 
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.07984924  97.07881927  95.93099213 166.76631165 166.97236633
- 165.24542236          nan          nan          nan   5.47291994
-   5.3199234    4.69729805]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.09938812  97.09975433  95.84416962 166.83920288 166.91795349
+ 165.14698792          nan          nan          nan   5.43381119
+   4.7660985    4.53963709]
   [BalancePoint] Row 1
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 2
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.0864563   97.11315918  95.93280792 166.77494812 167.04702759
- 165.23669434          nan          nan          nan   5.59814072
-   5.41291428   4.73834515]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.05589294  97.05976868  95.83695984 166.72073364 166.85876465
+ 165.16769409          nan          nan          nan   5.33531475
+   4.73530674   4.49205542]
   [BalancePoint] Row 3
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 4
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.07928467  97.10820007  95.96520233 166.72045898 167.07246399
- 165.30097961          nan          nan          nan   5.57391596
-   5.46441126   4.66436625]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.05181885  97.02879333  95.82213593 166.71354675 166.80110168
+ 165.14584351          nan          nan          nan   5.3475914
+   4.73706341   4.52596951]
   [BalancePoint] Row 5
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 6
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.08952332  97.11519623  95.96498871 166.74827576 167.05740356
- 165.31744385          nan          nan          nan   5.51858091
-   5.42767143   4.67128992]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.04660034  97.028862    95.80284119 166.71209717 166.79759216
+ 165.10858154          nan          nan          nan   5.37741995
+   4.7165184    4.55794716]
   [BalancePoint] Row 7
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 8
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.12207794  97.15158844  95.98911285 166.81994629 167.12716675
- 165.33717346          nan          nan          nan   5.60822773
-   5.49698305   4.74773216]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.03646851  97.03598785  95.76925659 166.73893738 166.79714966
+ 165.01898193          nan          nan          nan   5.43588066
+   4.73117638   4.56742287]
   [BalancePoint] Row 9
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 10
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.15509033  97.19815063  95.98304749 166.93052673 167.15843201
- 165.32252502          nan          nan          nan   5.81369495
-   5.47758818   4.62971973]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.0135498   97.03396606  95.80123138 166.68611145 166.80541992
+ 165.07504272          nan          nan          nan   5.54495811
+   4.64885664   4.17629814]
   [BalancePoint] Row 11
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 12
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.12861633  97.14395142  95.94400024 166.83847046 167.05140686
- 165.31393433          nan          nan          nan   5.68261909
-   4.80337763   4.27667713]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01502228  97.01956177  95.82194519 166.67723083 166.79319763
+ 165.10935974          nan          nan          nan   5.53366184
+   4.71366358   4.16432428]
   [BalancePoint] Row 13
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 14
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1279068   97.11761475  95.91882324 166.82510376 166.96791077
- 165.32035828          nan          nan          nan   5.5087862
-   4.74599171   4.46162462]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.03694916  97.06053162  95.82564545 166.73497009 166.85147095
+ 165.10891724          nan          nan          nan   5.5430913
+   4.69580173   4.13601875]
   [BalancePoint] Row 15
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 16
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.13298798  97.11291504  95.93186951 166.82362366 166.97926331
- 165.33374023          nan          nan          nan   5.48227406
-   4.80216789   4.53315353]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.03955078  97.05912781  95.82325745 166.74082947 166.86187744
+ 165.09063721          nan          nan          nan   5.57678843
+   4.71776104   4.1444869 ]
   [BalancePoint] Row 17
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 18
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.15939331  97.13777161  95.90364838 166.92475891 166.98799133
- 165.26335144          nan          nan          nan   5.65679026
-   4.76985741   4.44045925]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01230621  97.08044434  95.90882874 166.64331055 166.98774719
+ 165.2013855           nan          nan          nan   5.36458588
+   4.99167013   4.51175261]
   [BalancePoint] Row 19
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 20
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.13955688  97.15048981  95.96564484 166.84643555 167.07530212
- 165.34945679          nan          nan          nan   5.85717583
-   5.06380224   4.28563595]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 94.99885559  97.06166077  95.90935516 166.62409973 166.95864868
+ 165.19451904          nan          nan          nan   5.39083147
+   4.91888475   4.44883776]
   [BalancePoint] Row 21
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 22
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1455307   97.16234589  95.96343994 166.87701416 167.07150269
- 165.34979248          nan          nan          nan   5.91511488
-   5.24783039   4.38726711]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01380157  97.08170319  95.88539124 166.67932129 166.96429443
+ 165.152771            nan          nan          nan   5.46711588
+   4.9305501    4.50420141]
   [BalancePoint] Row 23
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 24
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.13037872  97.16886139  95.97193146 166.85920715 167.0980072
- 165.34121704          nan          nan          nan   5.88065195
-   5.291255     4.42816496]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02104187  97.10050964  95.91281128 166.68707275 167.02659607
+ 165.17558289          nan          nan          nan   5.52276611
+   4.97167349   4.48745012]
   [BalancePoint] Row 25
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 26
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16906738  97.22301483  96.01784515 166.95606995 167.2068634
- 165.3762207           nan          nan          nan   5.80028772
-   5.46918535   4.60555458]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02613068  97.13574982  95.95755768 166.70014954 167.10163879
+ 165.23492432          nan          nan          nan   5.58870268
+   5.2840004    4.6001792 ]
   [BalancePoint] Row 27
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 28
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.17605591  97.23960114  96.09059143 166.91777039 167.29327393
- 165.49519348          nan          nan          nan   5.59680033
-   5.34903479   4.66252136]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.03223419  97.1175766   95.93501282 166.72718811 167.03826904
+ 165.2109375           nan          nan          nan   5.55977488
+   5.24863338   4.58020878]
   [BalancePoint] Row 29
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 30
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1784668   97.22148132  96.05307007 166.9447937  167.20976257
- 165.45910645          nan          nan          nan   5.53529882
-   5.12155533   4.57070637]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02805328  97.12833405  95.93811798 166.72013855 167.06130981
+ 165.21191406          nan          nan          nan   5.53956938
+   5.25429821   4.56285048]
   [BalancePoint] Row 31
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 32
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16810608  97.24356079  96.06439972 166.91069031 167.27963257
- 165.46377563          nan          nan          nan   5.56992149
-   5.12797022   4.50563335]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02462006  97.12055969  95.9312439  166.70782471 167.06942749
+ 165.18490601          nan          nan          nan   5.59175968
+   5.26902008   4.5793128 ]
   [BalancePoint] Row 33
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 34
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1701889   97.23706055  96.03420258 166.9394989  167.25245667
- 165.40220642          nan          nan          nan   5.59540033
-   5.26413488   4.60804033]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 94.99378204  97.07345581  95.91057587 166.62236023 166.97880554
+ 165.18989563          nan          nan          nan   5.50331736
+   5.47850752   4.66177225]
   [BalancePoint] Row 35
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 36
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1439209   97.22032928  96.06518555 166.85784912 167.26838684
- 165.44708252          nan          nan          nan   5.70060539
-   5.66176319   4.66718531]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01052856  97.06035614  95.87024689 166.67677307 166.90837097
+ 165.14198303          nan          nan          nan   5.55750751
+   5.43663263   4.5781908 ]
   [BalancePoint] Row 37
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 38
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.17098236  97.23235321  96.04562378 166.92181396 167.23918152
- 165.44592285          nan          nan          nan   5.74723053
-   5.62454128   4.6227107 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01667786  97.07976532  95.8767395  166.68983459 166.95256042
+ 165.14041138          nan          nan          nan   5.63998413
+   5.49702835   4.58269882]
   [BalancePoint] Row 39
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 40
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.18532562  97.25827026  96.05796814 166.95414734 167.29039001
- 165.45367432          nan          nan          nan   5.80947161
-   5.60751343   4.54043865]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01402283  97.08258057  95.88426971 166.67906189 166.97470093
+ 165.14254761          nan          nan          nan   5.63856459
+   5.50095129   4.59333229]
   [BalancePoint] Row 41
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 42
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.18359375  97.25979614  96.04141998 166.96633911 167.28892517
- 165.41416931          nan          nan          nan   5.8014369
-   5.5700984    4.52780819]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02088165  97.0785141   95.91856384 166.68205261 166.9733429
+ 165.20481873          nan          nan          nan   5.41788149
+   5.41754961   4.67445803]
   [BalancePoint] Row 43
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 44
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16267395  97.243927    96.03423309 166.91667175 167.2713623
- 165.40539551          nan          nan          nan   5.78594303
-   5.50951862   4.49577332]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.05666351  97.08353424  95.90757751 166.7638855  166.94111633
+ 165.20637512          nan          nan          nan   5.4177289
+   5.33102036   4.69783735]
   [BalancePoint] Row 45
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 46
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16569519  97.22618103  96.02342224 166.93182373 167.20474243
- 165.41210938          nan          nan          nan   5.81224203
-   5.52968884   4.52656794]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.05708313  97.1019516   95.93521118 166.74275208 167.01367188
+ 165.23591614          nan          nan          nan   5.4715004
+   5.40383482   4.70652771]
   [BalancePoint] Row 47
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 48
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16323853  97.22203827  96.01133728 166.93363953 167.1925354
- 165.39006042          nan          nan          nan   5.78683043
-   5.50870323   4.55769491]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.04073334  97.0870285   95.90776062 166.72079468 166.9724884
+ 165.19732666          nan          nan          nan   5.4234786
+   5.33711004   4.69363546]
   [BalancePoint] Row 49
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 50
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.18510437  97.21437836  95.98107147 166.98707581 167.15568542
- 165.34529114          nan          nan          nan   5.84277344
-   5.29532194   4.4424777 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.03327942  97.09848022  95.91285706 166.69906616 167.0014801
+ 165.20620728          nan          nan          nan   5.55436087
+   5.4978075    4.57929134]
   [BalancePoint] Row 51
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 52
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.15500641  97.18439484  95.95550537 166.90252686 167.11308289
- 165.32420349          nan          nan          nan   5.71792889
-   4.83218145   4.1926322 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.06453705  97.11621857  95.90878296 166.78295898 166.99391174
+ 165.20732117          nan          nan          nan   5.57168722
+   5.44995308   4.55772972]
   [BalancePoint] Row 53
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 54
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.15882874  97.17715454  95.95031738 166.90834045 167.07362366
- 165.34286499          nan          nan          nan   5.59758663
-   4.7046833    4.1983633 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.06031799  97.13080597  95.93382263 166.76351929 167.05525208
+ 165.22703552          nan          nan          nan   5.60220909
+   5.49246073   4.52866793]
   [BalancePoint] Row 55
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 56
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16542816  97.16080475  95.932724   166.93811035 167.03353882
- 165.30540466          nan          nan          nan   5.60581255
-   4.64040136   4.25941515]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.07546997  97.13710022  95.92018127 166.80657959 167.04072571
+ 165.2119751           nan          nan          nan   5.62525606
+   5.46947098   4.58558846]
   [BalancePoint] Row 57
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 58
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.17069244  97.16164398  95.95502472 166.92677307 167.06486511
- 165.33473206          nan          nan          nan   5.62699747
-   4.68465328   4.2863493 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.04463196  97.12734985  95.95212555 166.70854187 167.07376099
+ 165.26231384          nan          nan          nan   5.41276741
+   5.03392649   4.51530933]
   [BalancePoint] Row 59
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 60
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.14427185  97.15302277  95.9305191  166.87420654 167.04359436
- 165.30599976          nan          nan          nan   5.53567934
-   4.64071512   4.2854023 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.06867981  97.11231995  95.92190552 166.77151489 166.99951172
+ 165.2363739           nan          nan          nan   5.36100483
+   4.87148666   4.45583534]
   [BalancePoint] Row 61
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 62
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.14144897  97.12419128  95.9355545  166.85137939 166.98986816
- 165.33586121          nan          nan          nan   5.58256292
-   4.70419836   4.38940048]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.0723114   97.12293243  95.9364624  166.77593994 167.03991699
+ 165.2414856           nan          nan          nan   5.44051695
+   4.9380765    4.45175552]
   [BalancePoint] Row 63
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 64
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.16352844  97.13535309  95.90605164 166.9090271  166.98005676
- 165.29440308          nan          nan          nan   5.7093482
-   4.74471951   4.47234726]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.04563141  97.10505676  95.89858246 166.74836731 166.99290466
+ 165.1733551           nan          nan          nan   5.39824104
+   4.90200615   4.45088053]
   [BalancePoint] Row 65
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 66
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.15086365  97.11489868  95.90255737 166.87844849 166.96206665
- 165.27923584          nan          nan          nan   5.78517008
-   4.84533215   4.53620195]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 94.9879837   97.05184174  95.8434906  166.6293335  166.88023376
+ 165.11732483          nan          nan          nan   5.58971262
+   5.02275944   4.18867064]
   [BalancePoint] Row 67
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 68
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.11177063  97.09714508  95.87070465 166.79884338 166.94171143
- 165.22608948          nan          nan          nan   5.76623106
-   4.76129961   4.42898703]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 94.99713898  97.01391602  95.81406403 166.62728882 166.79458618
+ 165.10374451          nan          nan          nan   5.47221136
+   4.69931793   4.08440065]
   [BalancePoint] Row 69
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 70
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.10964966  97.08761597  95.87610626 166.7928772  166.92095947
- 165.24179077          nan          nan          nan   5.76758623
-   4.81829166   4.38622856]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02587891  97.04824829  95.79821014 166.72235107 166.82052612
+ 165.0644989           nan          nan          nan   5.54251862
+   4.68286991   4.09744263]
   [BalancePoint] Row 71
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 72
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.14601898  97.11754608  95.88820648 166.88317871 166.94615173
- 165.2615509           nan          nan          nan   5.85597324
-   4.85074139   4.49871778]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.02177429  97.04840088  95.79266357 166.72473145 166.82284546
+ 165.04344177          nan          nan          nan   5.55566788
+   4.69547415   4.13558054]
   [BalancePoint] Row 73
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 74
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.1401825   97.12999725  95.89712524 166.89375305 166.98098755
- 165.24299622          nan          nan          nan   5.92502785
-   4.96080256   4.42654133]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.01537323  97.08023071  95.89673615 166.66917419 166.97543335
+ 165.17167664          nan          nan          nan   5.39755964
+   5.28135014   4.60212803]
   [BalancePoint] Row 75
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 76
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.08092499  97.13317108  95.8979187  166.78945923 167.0309906
- 165.20278931          nan          nan          nan   5.87558508
-   5.26568174   4.38985205]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.0398941   97.06893921  95.91345215 166.70056152 166.94038391
+ 165.22651672          nan          nan          nan   5.33956909
+   5.14478254   4.61585712]
   [BalancePoint] Row 77
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 78
-  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.08876801  97.12509918  95.94322968 166.76702881 167.04234314
- 165.29185486          nan          nan          nan   5.80712032
-   5.41103315   4.4196744 ]
+  [BalancePoint] Got raw data, shape: 24
+  [BalancePoint] Raw features contain NaN/Inf, replacing with 0: [ 95.04888153  97.10947418  95.92346954 166.71928406 167.02268982
+ 165.22906494          nan          nan          nan   5.43521643
+   5.17703342   4.59931135]
   [BalancePoint] Row 79
+  [PhotoVoltaic] Got raw data, shape: 24
   [PhotoVoltaic] Row 80
 ✓ Collected 80 rows
-✓ Saved to: data_out/collected_20260922_151703.csv
+✓ Saved to: data_out/collected_20260922_152124.csv
