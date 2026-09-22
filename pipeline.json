@@ -5,6 +5,6 @@
     "drop_indices_0_based": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
     "names": ["V_L1","V_L2","V_L3","V_L12","V_L23","V_L31","PF_L1","PF_L2","PF_L3","THD_L1","THD_L2","THD_L3"]
   },
-  "per_unit": { "enabled": true, "per_unit_feature_count": 6, "baseline_samples": 1 }
+  "per_unit": { "enabled": false, "per_unit_feature_count": 6, "baseline_samples": 1 }
 }
 
