@@ -113,10 +113,10 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                     print(f"  [{meter.id}] Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
                     continue
 
-                # Check for invalid raw features
+                # Check for invalid raw features and replace NaN with 0
                 if not np.isfinite(features).all():
-                    print(f"  [{meter.id}] Raw features contain NaN/Inf: {features}")
-                    continue
+                    print(f"  [{meter.id}] Raw features contain NaN/Inf, replacing with 0: {features}")
+                    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
 
                 # Apply normalization if enabled
                 if pipeline.per_unit.enabled:
