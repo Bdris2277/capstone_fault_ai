@@ -17,6 +17,7 @@ OFFLINE_WHEELS_DIR = "offline/wheels"
 COLLECT_OUT_CSV = "data_out/collected.csv"
 COLLECT_APPEND_IF_EXISTS = True
 COLLECT_INCLUDE_METER_ID = True
+COLLECT_DURATION_S = 10.0  # How long to collect data (seconds)
 
 # Label you are currently collecting (change this when you switch conditions)
 # Example mapping (you decide): 0=normal, 1=fault_a, 2=fault_b, ...
