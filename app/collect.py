@@ -119,6 +119,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                 if not np.isfinite(features).all():
                     print(f"  [{meter.id}] Raw features contain NaN/Inf, replacing with 0: {features}")
                     features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+                else:
+                    print(f"  [{meter.id}] Features OK (no NaN/Inf)")
 
                 # Apply normalization if enabled
                 if pipeline.per_unit.enabled:
@@ -126,7 +128,9 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                         features, baseline_samples=pipeline.per_unit.baseline_samples
                     )
                     if baseline is None:
+                        print(f"  [{meter.id}] Waiting for baseline samples...")
                         continue
+                    print(f"  [{meter.id}] Normalizing with baseline")
                     features = to_per_unit(
                         features,
                         per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
