@@ -61,8 +61,10 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     out_file = Path(user_params.COLLECT_OUT_CSV).parent / f"collected_{timestamp}.csv"
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # CSV header
-    header = ["class", "meter_id", *pipeline.features.names]
+    # CSV header - one meter's features per column group
+    header = ["class"]
+    for meter in meters:
+        header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
 
     # Open CSV
     csvfile = open(out_file, "w", newline="", encoding="utf-8")
@@ -91,7 +93,10 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     try:
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
+            row_data = [class_label]
+            row_complete = True
 
+            # Collect from all meters for this cycle
             for meter in meters:
                 polls += 1
                 # Get data
@@ -105,7 +110,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                 )
                 if raw is None:
                     print(f"  [{meter.id}] ❌ No response from meter")
-                    continue
+                    row_complete = False
+                    break
 
                 print(f"  [{meter.id}] Got raw data, shape: {raw.shape if hasattr(raw, 'shape') else len(raw)}")
 
@@ -113,7 +119,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                 features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
                 if features.shape[0] != len(pipeline.features.names):
                     print(f"  [{meter.id}] ❌ Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
-                    continue
+                    row_complete = False
+                    break
 
                 # Check for invalid raw features and replace NaN with 0
                 if not np.isfinite(features).all():
@@ -129,7 +136,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                     )
                     if baseline is None:
                         print(f"  [{meter.id}] Waiting for baseline samples...")
-                        continue
+                        row_complete = False
+                        break
                     print(f"  [{meter.id}] Normalizing with baseline")
                     features = to_per_unit(
                         features,
@@ -140,13 +148,20 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                 # Skip invalid data after normalization
                 if not np.isfinite(features).all():
                     print(f"  [{meter.id}] After normalization: NaN/Inf: {features}")
-                    continue
+                    row_complete = False
+                    break
 
-                # Write row
-                row = [class_label, meter.id, *[f"{v:.6g}" for v in features.tolist()]]
-                writer.writerow(row)
+                # Add this meter's features to the row
+                row_data.extend([f"{v:.6g}" for v in features.tolist()])
+                print(f"  [{meter.id}] Data OK")
+
+            # Only write row if all meters contributed
+            if row_complete:
+                writer.writerow(row_data)
                 rows += 1
-                print(f"  [{meter.id}] Row {rows}")
+                print(f"✓ Row {rows} written\n")
+            else:
+                print(f"✗ Row incomplete, skipping\n")
 
             csvfile.flush()
 
