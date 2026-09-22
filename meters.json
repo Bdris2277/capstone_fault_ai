@@ -4,7 +4,7 @@
     { "id": "Wind",         "ip": "192.168.168.11",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": false},
     { "id": "BalancePoint", "ip": "192.168.168.26",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true },
     { "id": "ConsumerII",   "ip": "192.168.168.31",  "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": false},
-    { "id": "PhotoVoltaic", "ip": "192.168.168.110", "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true }
+    { "id": "PhotoVoltaic", "ip": "192.168.168.110", "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": false }
   ]
 }
 
