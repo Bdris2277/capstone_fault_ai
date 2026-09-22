@@ -73,20 +73,27 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     clients = {}
     for meter in meters:
         client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
-        if not client.connect():
-            print(f"WARNING: Failed to connect to {meter.id}")
+        connected = client.connect()
+        if not connected:
+            print(f"❌ Failed to connect to {meter.id} ({meter.ip}:{meter.port})")
+        else:
+            print(f"✓ Connected to {meter.id}")
         clients[meter.id] = client
+
+    print()
 
     # Collect data
     runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters}
     deadline = time.monotonic() + duration_s
     rows = 0
+    polls = 0
 
     try:
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
 
             for meter in meters:
+                polls += 1
                 # Get data
                 raw = poll_holding_registers(
                     clients[meter.id],
@@ -97,11 +104,13 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                     float_endianness=pipeline.decode.float_endianness,
                 )
                 if raw is None:
+                    print(f"  [{meter.id}] No response from meter")
                     continue
 
                 # Extract features
                 features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
                 if features.shape[0] != len(pipeline.features.names):
+                    print(f"  [{meter.id}] Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
                     continue
 
                 # Apply normalization if enabled
@@ -119,12 +128,14 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
 
                 # Skip invalid data
                 if not np.isfinite(features).all():
+                    print(f"  [{meter.id}] Invalid data (NaN or Inf)")
                     continue
 
                 # Write row
                 row = [class_label, meter.id, *[f"{v:.6g}" for v in features.tolist()]]
                 writer.writerow(row)
                 rows += 1
+                print(f"  [{meter.id}] Row {rows}")
 
             csvfile.flush()
 
