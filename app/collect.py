@@ -104,13 +104,15 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                     float_endianness=pipeline.decode.float_endianness,
                 )
                 if raw is None:
-                    print(f"  [{meter.id}] No response from meter")
+                    print(f"  [{meter.id}] ❌ No response from meter")
                     continue
+
+                print(f"  [{meter.id}] Got raw data, shape: {raw.shape if hasattr(raw, 'shape') else len(raw)}")
 
                 # Extract features
                 features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
                 if features.shape[0] != len(pipeline.features.names):
-                    print(f"  [{meter.id}] Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
+                    print(f"  [{meter.id}] ❌ Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
                     continue
 
                 # Check for invalid raw features and replace NaN with 0
