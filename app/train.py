@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import QuantileTransformer
 
-from capstone_fault_ai.ml.model import build_fault_mlp
-from capstone_fault_ai.ml.train_eval import predict_classes, train_one_epoch
+from capstone_fault_ai.Model.model import build_fault_mlp
+from capstone_fault_ai.Model.train_eval import predict_classes, train_one_epoch
 from capstone_fault_ai.app import user_params
 
 

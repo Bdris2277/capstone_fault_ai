@@ -36,8 +36,8 @@ FAULT_TYPES = {
 # STEP 2: Collection settings (how long to collect data)
 # ============================================================================
 COLLECT_DURATION_S = 180.0      # Seconds E.g(10 = collect for 10.0 seconds)
-COLLECT_CLASS_LABEL = 0        # Which fault type are you collecting now?
-                               # Change to 1, 2, etc. when you test different faults
+COLLECT_CLASS_LABEL = 0         # Which fault type are you collecting now?
+                                # Change to 1, 2, etc. when you test different faults
 
 # ============================================================================
 # STEP 3: Training settings (how should the model learn)

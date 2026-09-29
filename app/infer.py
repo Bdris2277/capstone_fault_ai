@@ -18,7 +18,7 @@ import numpy as np
 from capstone_fault_ai.core.config import load_meters_config, load_pipeline_config
 from capstone_fault_ai.core.modbus import poll_holding_registers
 from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_per_unit
-from capstone_fault_ai.ml.model import build_fault_mlp
+from capstone_fault_ai.Model.model import build_fault_mlp
 from capstone_fault_ai.app import user_params
 
 

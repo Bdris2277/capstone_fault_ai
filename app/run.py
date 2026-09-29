@@ -19,9 +19,9 @@ def show_menu():
     print("\n" + "="*50)
     print("AI FAULT DETECTION")
     print("="*50)
-    print("1. Collect Data")
-    print("2. Train Model")
-    print("3. Run Inference")
+    print("1. Collect Data(Only thing that works right now)")
+    print("2. Train Model(Not implemented yet)")
+    print("3. Run Inference(Not implemented yet)")
     print("="*50)
     
     choice = input("What do you want to do? (1-3): ").strip()
