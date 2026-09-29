@@ -49,8 +49,8 @@ LR = 1e-3                # Learning speed (0.001 is typical)
 # ============================================================================
 # CONFIG FILES (don't change anything below this line PLEASE)
 # ============================================================================
-METERS_JSON = "meters.json"
-PIPELINE_JSON = "pipeline.json"
+METERS_JSON = "Config_Files/meters.json"
+PIPELINE_JSON = "Config_Files/pipeline.json"
 
 # Data paths (automatic)
 COLLECT_OUT_CSV = "data_out/collected.csv"

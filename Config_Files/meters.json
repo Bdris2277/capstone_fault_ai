@@ -7,4 +7,3 @@
     { "id": "PhotoVoltaic", "ip": "192.168.168.110", "port": 502, "unit_id": 1, "timeout_s": 3, "enabled": true}
   ]
 }
-
