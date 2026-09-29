@@ -1,36 +1,58 @@
 from __future__ import annotations
 
-# Edit this file to match your environment.
-# Goal: after initial setup, you can click "Run" on scripts with minimal prompts.
+"""
+CONFIGURATION FILE - Easy setup for everyone!
 
-# Config files (usually don’t change often)
+Edit ONLY the values in STEP 1, 2, and 3 below.
+Everything else is automatic. No programming knowledge needed!
+"""
+
+# ============================================================================
+# STEP 1: Define your fault types (what should we detect)
+# ============================================================================
+# Change the names to match what you're testing.
+# Example: 0=healthy, 1=under_voltage, 2=over_voltage
+
+FAULT_TYPES = {
+    0: "normal",           # The good/healthy state
+    1: "fault",            # First fault type
+    2: "other_fault",      # Second fault type (add more if needed)
+}
+
+# ============================================================================
+# STEP 2: Collection settings (how long to collect data)
+# ============================================================================
+COLLECT_DURATION_S = 10.0      # Seconds (10 = collect for 10 seconds)
+COLLECT_CLASS_LABEL = 0        # Which fault type are you collecting now?
+                               # Change to 1, 2, etc. when you test different faults
+
+# ============================================================================
+# STEP 3: Training settings (how should the model learn)
+# ============================================================================
+EPOCHS = 50              # Training cycles (higher = better, slower)
+BATCH_SIZE = 64          # Samples per cycle (64 is typical)
+LR = 1e-3                # Learning speed (0.001 is typical)
+
+# ============================================================================
+# CONFIG FILES (don't change these)
+# ============================================================================
 METERS_JSON = "meters.json"
 PIPELINE_JSON = "pipeline.json"
 
-# Offline install (Jetson / no internet)
-# Put wheels in OFFLINE_WHEELS_DIR and list deps in OFFLINE_REQUIREMENTS.
+# Data paths (automatic)
+COLLECT_OUT_CSV = "data_out/collected.csv"
+TRAIN_CSV = "data_out/train_data.csv"
+TEST_CSV = "data_out/test_data.csv"
+ARTIFACTS_DIR = "capstone_fault_ai_artifacts"
+INFER_OUT_CSV = "capstone_fault_ai_artifacts/predictions_live.csv"
+
+# Offline Jetson setup
 AUTO_INSTALL_OFFLINE_DEPS = True
 OFFLINE_REQUIREMENTS = "offline/requirements_jetson.txt"
 OFFLINE_WHEELS_DIR = "offline/wheels"
 
-# Data collection defaults
-COLLECT_OUT_CSV = "data_out/collected.csv"
+# Internal use (for compatibility)
+CLASS_LABEL_NAMES = FAULT_TYPES
+COLLECTED_CSV = COLLECT_OUT_CSV
 COLLECT_APPEND_IF_EXISTS = True
 COLLECT_INCLUDE_METER_ID = True
-COLLECT_DURATION_S = 10.0  # How long to collect data (seconds)
-
-# Label you are currently collecting (change this when you switch conditions)
-# Example mapping (you decide): 0=normal, 1=fault_a, 2=fault_b, ...
-COLLECT_CLASS_LABEL = 0
-
-# Train defaults
-COLLECTED_CSV = "data_out/collected.csv"
-TRAIN_CSV = "data_out/train_data.csv"
-TEST_CSV = "data_out/test_data.csv"
-ARTIFACTS_DIR = "capstone_fault_ai_artifacts"
-EPOCHS = 50
-BATCH_SIZE = 64
-LR = 1e-3
-
-# Inference defaults
-INFER_OUT_CSV = "capstone_fault_ai_artifacts/predictions_live.csv"

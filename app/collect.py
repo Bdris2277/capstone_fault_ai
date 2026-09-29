@@ -56,10 +56,18 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     print(f"Collecting from: {', '.join(m.id for m in meters)}")
     print(f"Duration: {duration_s}s\n")
 
-    # Setup CSV file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_file = Path(user_params.COLLECT_OUT_CSV).parent / f"collected_{timestamp}.csv"
-    out_file.parent.mkdir(parents=True, exist_ok=True)
+    # Setup CSV file with class label name
+    class_name = user_params.CLASS_LABEL_NAMES.get(class_label, f"class_{class_label}")
+    out_dir = Path(user_params.COLLECT_OUT_CSV).parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Find next auto-increment number for this class
+    counter = 1
+    while True:
+        out_file = out_dir / f"{class_name}_{counter}.csv"
+        if not out_file.exists():
+            break
+        counter += 1
 
     # CSV header - one meter's features per column group
     header = ["class"]
