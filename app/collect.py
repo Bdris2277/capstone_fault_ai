@@ -37,11 +37,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
         duration_s: How long to collect (seconds)
         class_label: Class label for this data
     """
-    try:
-        from pymodbus.client import ModbusTcpClient
-    except ModuleNotFoundError:
-        print("ERROR: pymodbus not installed")
-        return 2
+    from pymodbus.client import ModbusTcpClient
 
     # Load configs
     meters_cfg = load_meters_config(user_params.METERS_JSON)
@@ -49,9 +45,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
 
     # Filter to enabled meters
     meters = [m for m in meters_cfg.meters if getattr(m, 'enabled', True)]
-    if not meters:
-        print("ERROR: No enabled meters")
-        return 2
 
     print(f"Collecting from: {', '.join(m.id for m in meters)}")
     print(f"Duration: {duration_s}s\n")
@@ -83,11 +76,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     clients = {}
     for meter in meters:
         client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
-        connected = client.connect()
-        if not connected:
-            print(f"❌ Failed to connect to {meter.id} ({meter.ip}:{meter.port})")
-        else:
-            print(f"✓ Connected to {meter.id}")
+        client.connect()
+        print(f" Connected to {meter.id}")
         clients[meter.id] = client
 
     print()
@@ -96,17 +86,14 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters}
     deadline = time.monotonic() + duration_s
     rows = 0
-    polls = 0
 
     try:
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
             row_data = [class_label]
-            row_complete = True
 
             # Collect from all meters for this cycle
             for meter in meters:
-                polls += 1
                 # Get data
                 raw = poll_holding_registers(
                     clients[meter.id],
@@ -116,60 +103,32 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
                     count=pipeline.modbus.count,
                     float_endianness=pipeline.decode.float_endianness,
                 )
-                if raw is None:
-                    print(f"  [{meter.id}] ❌ No response from meter")
-                    row_complete = False
-                    break
-
-                print(f"  [{meter.id}] Got raw data, shape: {raw.shape if hasattr(raw, 'shape') else len(raw)}")
 
                 # Extract features
                 features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
-                if features.shape[0] != len(pipeline.features.names):
-                    print(f"  [{meter.id}] ❌ Feature size mismatch: got {features.shape[0]}, expected {len(pipeline.features.names)}")
-                    row_complete = False
-                    break
 
-                # Check for invalid raw features and replace NaN with 0
-                if not np.isfinite(features).all():
-                    print(f"  [{meter.id}] Raw features contain NaN/Inf, replacing with 0: {features}")
-                    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
-                else:
-                    print(f"  [{meter.id}] Features OK (no NaN/Inf)")
+                # Handle NaN/Inf
+                features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
 
                 # Apply normalization if enabled
                 if pipeline.per_unit.enabled:
                     baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
                         features, baseline_samples=pipeline.per_unit.baseline_samples
                     )
-                    if baseline is None:
-                        print(f"  [{meter.id}] Waiting for baseline samples...")
-                        row_complete = False
-                        break
-                    print(f"  [{meter.id}] Normalizing with baseline")
-                    features = to_per_unit(
-                        features,
-                        per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
-                        baseline=baseline,
-                    )
-
-                # Skip invalid data after normalization
-                if not np.isfinite(features).all():
-                    print(f"  [{meter.id}] After normalization: NaN/Inf: {features}")
-                    row_complete = False
-                    break
+                    if baseline is not None:
+                        features = to_per_unit(
+                            features,
+                            per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
+                            baseline=baseline,
+                        )
 
                 # Add this meter's features to the row
                 row_data.extend([f"{v:.6g}" for v in features.tolist()])
-                print(f"  [{meter.id}] Data OK")
 
-            # Only write row if all meters contributed
-            if row_complete:
-                writer.writerow(row_data)
-                rows += 1
-                print(f"✓ Row {rows} written\n")
-            else:
-                print(f"✗ Row incomplete, skipping\n")
+            # Write row
+            writer.writerow(row_data)
+            rows += 1
+            print(f"Row {rows}")
 
             csvfile.flush()
 
@@ -187,8 +146,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
             except Exception:
                 pass
 
-    print(f"✓ Collected {rows} rows")
-    print(f"✓ Saved to: {out_file}\n")
+    print(f"\nCollected {rows} rows")
+    print(f"Saved to: {out_file}\n")
     return 0
 
 
