@@ -2,8 +2,8 @@
   "modbus": { "address": 1, "count": 48 },
   "decode": { "float_endianness": "big" },
   "features": {
-    "drop_indices_0_based": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-    "names": ["V_L1","V_L2","V_L3","V_L12","V_L23","V_L31","PF_L1","PF_L2","PF_L3","THD_L1","THD_L2","THD_L3"]
+    "drop_indices_0_based": [],
+    "names": ["V_L1","V_L2","V_L3","V_L12","V_L23","V_L31","A_L1","A_L2","A_L3","VA_L1","VA_L2","VA_L3","W_L1","W_L2","W_L3","Q_L1","Q_L2","Q_L3","PF_L1","PF_L2","PF_L3","THD_L1","THD_L2","THD_L3"]
   },
   "per_unit": { "enabled": false, "per_unit_feature_count": 6, "baseline_samples": 1 }
 }
