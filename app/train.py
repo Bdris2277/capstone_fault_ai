@@ -21,7 +21,10 @@ from capstone_fault_ai.app import user_params
 
 def _numeric_feature_frame(df: pd.DataFrame, *, context: str) -> pd.DataFrame:
     features = df.drop(columns=["class"])
-    timestamp_cols = [c for c in features.columns if c.endswith("_meter_timestamp")]
+    timestamp_cols = [
+        c for c in features.columns
+        if c.endswith("_meter_timestamp") or c.endswith("_meter_timestamp_utc")
+    ]
     if timestamp_cols:
         features = features.drop(columns=timestamp_cols)
         print(f"[{context}] Ignoring timestamp metadata columns: {', '.join(timestamp_cols)}")

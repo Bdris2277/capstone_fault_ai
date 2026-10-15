@@ -13,6 +13,7 @@ if __package__ in (None, ""):
 import csv
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -49,6 +50,15 @@ def _decode_meter_timestamp(registers: list[int], *, fmt: str) -> int | None:
     for reg in regs:
         value = (value << 16) | (int(reg) & 0xFFFF)
     return value
+
+
+def _format_meter_timestamp_utc(timestamp: int | None) -> str:
+    if timestamp is None:
+        return ""
+    try:
+        return datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat()
+    except (OverflowError, OSError, ValueError):
+        return ""
 
 
 def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location: str | None = None):
@@ -105,6 +115,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     for meter in meters:
         if pipeline.meter_timestamp.enabled:
             header.append(f"{meter.id}_meter_timestamp")
+            header.append(f"{meter.id}_meter_timestamp_utc")
         header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
 
     # Open CSV
@@ -148,6 +159,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
                 if meter.id not in clients:
                     if pipeline.meter_timestamp.enabled:
                         row_data.append("")
+                        row_data.append("")
                     row_data.extend(["0"] * len(pipeline.features.names))
                     continue
 
@@ -164,6 +176,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
                             fmt=pipeline.meter_timestamp.format,
                         )
                     row_data.append("" if meter_ts is None else str(meter_ts))
+                    row_data.append(_format_meter_timestamp_utc(meter_ts))
 
                 # Get data
                 raw = poll_holding_registers(
