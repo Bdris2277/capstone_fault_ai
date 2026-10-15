@@ -52,14 +52,17 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     # Setup CSV file with class label name
     class_name = user_params.CLASS_LABEL_NAMES.get(class_label, f"class_{class_label}")
     fault_type_name = user_params.FAULT_TYPES.get(class_label, class_name)
-    fault_location_name = (fault_location or getattr(user_params, "COLLECT_FAULT_LOCATION", "")).strip()
-    if not fault_location_name:
-        raise ValueError("COLLECT_FAULT_LOCATION must be set to a single meter ID.")
     meter_ids = {m.id for m in meters}
-    if fault_location_name not in meter_ids:
-        raise ValueError(
-            f"Unknown fault location '{fault_location_name}'. Choose one of: {', '.join(sorted(meter_ids))}"
-        )
+    if class_label == 0:
+        fault_location_name = "none"
+    else:
+        fault_location_name = (fault_location or getattr(user_params, "COLLECT_FAULT_LOCATION", "")).strip()
+        if not fault_location_name:
+            raise ValueError("COLLECT_FAULT_LOCATION must be set to a single meter ID for non-normal classes.")
+        if fault_location_name not in meter_ids:
+            raise ValueError(
+                f"Unknown fault location '{fault_location_name}'. Choose one of: {', '.join(sorted(meter_ids))}"
+            )
 
     out_dir = Path(user_params.COLLECT_OUT_CSV).parent
     out_dir.mkdir(parents=True, exist_ok=True)

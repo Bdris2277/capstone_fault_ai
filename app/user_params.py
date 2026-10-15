@@ -19,6 +19,7 @@ Everything else is automatic.
 #   - TransmissionLineEnd
 #   - ConsumerII
 #   - PhotoVoltaic
+# For class 0 (normal), location is ignored and saved as "none" automatically.
 
 COLLECT_FAULT_LOCATION = "TransmissionLineEnd"  # Fault location label to store in collected CSV
 FAULT_TYPES = {
