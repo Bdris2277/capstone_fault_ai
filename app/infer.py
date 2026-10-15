@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# ruff: noqa: I001
+
 if __package__ in (None, ""):
     import sys
     from pathlib import Path
@@ -15,11 +17,11 @@ from pathlib import Path
 import joblib
 import numpy as np
 
+from capstone_fault_ai.Model.model import build_fault_mlp
+from capstone_fault_ai.app import user_params
 from capstone_fault_ai.core.config import load_meters_config, load_pipeline_config
 from capstone_fault_ai.core.modbus import poll_holding_registers
 from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_per_unit
-from capstone_fault_ai.Model.model import build_fault_mlp
-from capstone_fault_ai.app import user_params
 
 
 @dataclass
@@ -49,6 +51,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     meters_cfg = load_meters_config(args.meters_json)
+    meters_cfg = type(meters_cfg)(
+        poll_interval_s=meters_cfg.poll_interval_s,
+        meters=[m for m in meters_cfg.meters if getattr(m, "enabled", True)],
+    )
+
+    if not meters_cfg.meters:
+        print("No enabled meters found in meters config.")
+        return 2
+
     if str(args.meter_ids).strip():
         selected_ids = {s.strip() for s in str(args.meter_ids).split(",") if s.strip()}
         known_ids = {m.id for m in meters_cfg.meters}
@@ -61,6 +72,9 @@ def main(argv: list[str] | None = None) -> int:
             poll_interval_s=meters_cfg.poll_interval_s,
             meters=[m for m in meters_cfg.meters if m.id in selected_ids],
         )
+        if not meters_cfg.meters:
+            print("No enabled meters left after applying --meter_ids filter.")
+            return 2
     pipeline = load_pipeline_config(args.pipeline_json)
 
     artifacts_dir = Path(args.artifacts_dir)
@@ -69,12 +83,25 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     scaler = joblib.load(artifacts_dir / "scaler.pkl")
 
+    input_size = len(pipeline.features.names)
+    scaler_features = getattr(scaler, "n_features_in_", None)
+    if scaler_features is not None and int(scaler_features) != input_size:
+        print(
+            "Feature mismatch between pipeline and scaler: "
+            f"pipeline={input_size}, scaler={int(scaler_features)}. Retrain required."
+        )
+        return 2
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    input_size = len(pipeline.features.names)
     model = build_fault_mlp(input_size=input_size, num_classes=len(user_params.FAULT_TYPES))
-    model.load_state_dict(torch.load(artifacts_dir / "model.pth", map_location=device))
+    try:
+        model.load_state_dict(torch.load(artifacts_dir / "model.pth", map_location=device))
+    except RuntimeError as exc:
+        print(f"Model artifact is incompatible with current settings: {exc}")
+        print("Retrain the model with current pipeline and class settings.")
+        return 2
     model.to(device)
     model.eval()
 
@@ -88,8 +115,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for meter in meters_cfg.meters:
             client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
-            client.connect()
+            if not client.connect():
+                print(f"[{meter.id}] connect failed ({meter.ip}:{meter.port})")
+                continue
             clients[meter.id] = client
+
+        if not clients:
+            print("Failed to connect to all selected meters.")
+            return 2
 
         with open(out_path, "a", newline="", encoding="utf-8") as out_file:
             writer = csv.writer(out_file)
@@ -106,75 +139,82 @@ def main(argv: list[str] | None = None) -> int:
                     ]
                 )
 
-            while True:
-                loop_start = time.monotonic()
-                ts = time.time()
+            try:
+                while True:
+                    loop_start = time.monotonic()
+                    ts = time.time()
 
-                for meter in meters_cfg.meters:
-                    raw = poll_holding_registers(
-                        clients[meter.id],
-                        ip=meter.ip,
-                        unit_id=meter.unit_id,
-                        address=pipeline.modbus.address,
-                        count=pipeline.modbus.count,
-                        float_endianness=pipeline.decode.float_endianness,
-                    )
-                    if raw is None:
-                        continue
-
-                    features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
-                    if features.shape[0] != input_size:
-                        print(f"[{meter.id}] feature_size={features.shape[0]} expected={input_size}")
-                        continue
-
-                    if pipeline.per_unit.enabled:
-                        baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
-                            features,
-                            baseline_samples=pipeline.per_unit.baseline_samples,
-                        )
-                        if baseline is None:
+                    for meter in meters_cfg.meters:
+                        if meter.id not in clients:
                             continue
-                        features = to_per_unit(
-                            features,
-                            per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
-                            baseline=baseline,
+
+                        raw = poll_holding_registers(
+                            clients[meter.id],
+                            ip=meter.ip,
+                            unit_id=meter.unit_id,
+                            address=pipeline.modbus.address,
+                            count=pipeline.modbus.count,
+                            float_endianness=pipeline.decode.float_endianness,
                         )
+                        if raw is None:
+                            continue
 
-                    scaled = scaler.transform(features.reshape(1, -1))
-                    input_tensor = torch.tensor(scaled, dtype=torch.float32).to(device)
+                        features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
+                        if features.shape[0] != input_size:
+                            print(f"[{meter.id}] feature_size={features.shape[0]} expected={input_size}")
+                            continue
+                        features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
 
-                    with torch.no_grad():
-                        logits = model(input_tensor)
-                        probs = torch.softmax(logits, dim=1)
-                        conf, pred = probs.max(1)
+                        if pipeline.per_unit.enabled:
+                            baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
+                                features,
+                                baseline_samples=pipeline.per_unit.baseline_samples,
+                            )
+                            if baseline is None:
+                                continue
+                            features = to_per_unit(
+                                features,
+                                per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
+                                baseline=baseline,
+                            )
 
-                    pred_class = int(pred.item())
-                    pred_fault_type = user_params.FAULT_TYPES.get(pred_class, f"class_{pred_class}")
+                        scaled = scaler.transform(features.reshape(1, -1))
+                        input_tensor = torch.tensor(scaled, dtype=torch.float32).to(device)
 
-                    writer.writerow(
-                        [
-                            f"{ts:.3f}",
-                            meter.id,
-                            *[f"{v:.6g}" for v in features.tolist()],
-                            pred_class,
-                            pred_fault_type,
-                            meter.id,
-                            f"{(conf.item() * 100):.2f}",
-                        ]
-                    )
-                    out_file.flush()
+                        with torch.no_grad():
+                            logits = model(input_tensor)
+                            probs = torch.softmax(logits, dim=1)
+                            conf, pred = probs.max(1)
 
-                elapsed = time.monotonic() - loop_start
-                sleep_s = meters_cfg.poll_interval_s - elapsed
-                if sleep_s > 0:
-                    time.sleep(sleep_s)
+                        pred_class = int(pred.item())
+                        pred_fault_type = user_params.FAULT_TYPES.get(pred_class, f"class_{pred_class}")
+
+                        writer.writerow(
+                            [
+                                f"{ts:.3f}",
+                                meter.id,
+                                *[f"{v:.6g}" for v in features.tolist()],
+                                pred_class,
+                                pred_fault_type,
+                                meter.id,
+                                f"{(conf.item() * 100):.2f}",
+                            ]
+                        )
+                        out_file.flush()
+
+                    elapsed = time.monotonic() - loop_start
+                    sleep_s = meters_cfg.poll_interval_s - elapsed
+                    if sleep_s > 0:
+                        time.sleep(sleep_s)
+            except KeyboardInterrupt:
+                print("\nStopping live inference.")
 
     finally:
         for client in clients.values():
             try:
                 client.close()
-            except Exception:
-                pass
+            except (OSError, RuntimeError, AttributeError) as exc:
+                print(f"Failed to close meter client cleanly: {exc}")
 
     return 0
 

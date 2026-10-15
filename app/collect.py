@@ -14,7 +14,6 @@ import csv
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from datetime import datetime
 
 import numpy as np
 
@@ -45,6 +44,9 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
 
     # Filter to enabled meters
     meters = [m for m in meters_cfg.meters if getattr(m, 'enabled', True)]
+    if not meters:
+        print("No enabled meters found in meters config.")
+        return 2
 
     print(f"Collecting from: {', '.join(m.id for m in meters)}")
     print(f"Duration: {duration_s}s\n")
@@ -89,9 +91,16 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     clients = {}
     for meter in meters:
         client = ModbusTcpClient(meter.ip, port=meter.port, timeout=meter.timeout_s)
-        client.connect()
+        if not client.connect():
+            print(f" Connect failed: {meter.id} ({meter.ip}:{meter.port})")
+            continue
         print(f" Connected to {meter.id}")
         clients[meter.id] = client
+
+    if not clients:
+        csvfile.close()
+        print("No meter connections available. Collection aborted.")
+        return 2
 
     print()
 
@@ -107,6 +116,10 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
 
             # Collect from all meters for this cycle
             for meter in meters:
+                if meter.id not in clients:
+                    row_data.extend(["0"] * len(pipeline.features.names))
+                    continue
+
                 # Get data
                 raw = poll_holding_registers(
                     clients[meter.id],
@@ -117,8 +130,15 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
                     float_endianness=pipeline.decode.float_endianness,
                 )
 
+                if raw is None:
+                    row_data.extend(["0"] * len(pipeline.features.names))
+                    continue
+
                 # Extract features
                 features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
+                if features.shape[0] != len(pipeline.features.names):
+                    row_data.extend(["0"] * len(pipeline.features.names))
+                    continue
 
                 # Handle NaN/Inf
                 features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
@@ -156,7 +176,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
         for client in clients.values():
             try:
                 client.close()
-            except Exception:
+            except (OSError, RuntimeError, AttributeError):
                 pass
 
     print(f"\nCollected {rows} rows")
