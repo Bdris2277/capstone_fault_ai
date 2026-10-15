@@ -73,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Using device: {device}")
 
     input_size = len(pipeline.features.names)
-    model = build_fault_mlp(input_size=input_size, num_classes=5)
+    model = build_fault_mlp(input_size=input_size, num_classes=len(user_params.FAULT_TYPES))
     model.load_state_dict(torch.load(artifacts_dir / "model.pth", map_location=device))
     model.to(device)
     model.eval()
@@ -95,7 +95,15 @@ def main(argv: list[str] | None = None) -> int:
             writer = csv.writer(out_file)
             if not file_exists:
                 writer.writerow(
-                    ["ts_unix_s", "meter_id", *pipeline.features.names, "predicted_class", "confidence_pct"]
+                    [
+                        "ts_unix_s",
+                        "meter_id",
+                        *pipeline.features.names,
+                        "predicted_class",
+                        "predicted_fault_type",
+                        "predicted_fault_location",
+                        "confidence_pct",
+                    ]
                 )
 
             while True:
@@ -140,12 +148,17 @@ def main(argv: list[str] | None = None) -> int:
                         probs = torch.softmax(logits, dim=1)
                         conf, pred = probs.max(1)
 
+                    pred_class = int(pred.item())
+                    pred_fault_type = user_params.FAULT_TYPES.get(pred_class, f"class_{pred_class}")
+
                     writer.writerow(
                         [
                             f"{ts:.3f}",
                             meter.id,
                             *[f"{v:.6g}" for v in features.tolist()],
-                            int(pred.item()),
+                            pred_class,
+                            pred_fault_type,
+                            meter.id,
                             f"{(conf.item() * 100):.2f}",
                         ]
                     )

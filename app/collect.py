@@ -29,7 +29,7 @@ class MeterRuntime:
     per_unit: PerUnitState
 
 
-def collect_data(duration_s: float = 60.0, class_label: int = 0):
+def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location: str | None = None):
     """
     Collect data from all enabled meters.
     
@@ -51,6 +51,16 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
 
     # Setup CSV file with class label name
     class_name = user_params.CLASS_LABEL_NAMES.get(class_label, f"class_{class_label}")
+    fault_type_name = user_params.FAULT_TYPES.get(class_label, class_name)
+    fault_location_name = (fault_location or getattr(user_params, "COLLECT_FAULT_LOCATION", "")).strip()
+    if not fault_location_name:
+        raise ValueError("COLLECT_FAULT_LOCATION must be set to a single meter ID.")
+    meter_ids = {m.id for m in meters}
+    if fault_location_name not in meter_ids:
+        raise ValueError(
+            f"Unknown fault location '{fault_location_name}'. Choose one of: {', '.join(sorted(meter_ids))}"
+        )
+
     out_dir = Path(user_params.COLLECT_OUT_CSV).parent
     out_dir.mkdir(parents=True, exist_ok=True)
     
@@ -63,7 +73,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
         counter += 1
 
     # CSV header - one meter's features per column group
-    header = ["class"]
+    header = ["class", "fault_type", "fault_location"]
     for meter in meters:
         header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
 
@@ -90,7 +100,7 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0):
     try:
         while time.monotonic() < deadline:
             loop_start = time.monotonic()
-            row_data = [class_label]
+            row_data = [class_label, fault_type_name, fault_location_name]
 
             # Collect from all meters for this cycle
             for meter in meters:

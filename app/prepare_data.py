@@ -59,7 +59,7 @@ def main():
         df = pd.read_csv(csv_file)
         all_data.append(df)
         total_rows += len(df)
-        print(f"  Loaded {f.name}: {len(df)} rows")
+        print(f"  Loaded {csv_file.name}: {len(df)} rows")
     
     print(f"\nTotal rows: {total_rows}")
     

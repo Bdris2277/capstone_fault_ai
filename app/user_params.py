@@ -1,31 +1,42 @@
 from __future__ import annotations
 
 """
-CONFIGURATION FILE - Easy setup for everyone!
+CONFIGURATION FILE 
 
 Edit ONLY the values in STEP 1, 2, and 3 below.
 Everything else is automatic.
 """
 
 # ============================================================================
-# STEP 1: Define your fault types (what should we detect)
+# STEP 1: Define your fault types & Location (what should we detect and where)
 # ============================================================================
 # Change the names to match what you're testing.
 # Example: 0=healthy, 1=under_voltage, 2=over_voltage
 
+# Fault location options (set COLLECT_FAULT_LOCATION to one meter ID):
+#   - Wind
+#   - BalancePoint
+#   - TransmissionLineEnd
+#   - ConsumerII
+#   - PhotoVoltaic
+
+COLLECT_FAULT_LOCATION = "TransmissionLineEnd"  # Fault location label to store in collected CSV
 FAULT_TYPES = {
     0:  "normal",           # The good/healthy state
+
     1:  "fault_L1_0",       # Voltage Sag Line 1 0%
     2:  "fault_L1_20",      # Voltage Sag Line 1 20%
     3:  "fault_L1_40",      # Voltage Sag Line 1 40%
     4:  "fault_L1_60",      # Voltage Sag Line 1 60%
     5:  "fault_L1_80",      # Voltage Sag Line 1 80%
+    
     6:  "fault_L2_0",       # Voltage Sag Line 2 0%
     7:  "fault_L2_20",      # Voltage Sag Line 2 20%
     8:  "fault_L2_40",      # Voltage Sag Line 2 40%
     9:  "fault_L2_60",      # Voltage Sag Line 2 60%
     10: "fault_L2_80",      # Voltage Sag Line 2 80%
     11: "fault_L3_0",       # Voltage Sag Line 3 0%
+
     12: "fault_L3_20",      # Voltage Sag Line 3 20%
     13: "fault_L3_40",      # Voltage Sag Line 3 40%
     14: "fault_L3_60",      # Voltage Sag Line 3 60%

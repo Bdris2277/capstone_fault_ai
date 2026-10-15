@@ -70,6 +70,12 @@ def main(argv: list[str] | None = None) -> int:
     x_test_df = _numeric_feature_frame(test_df, context="test")
     y_test = test_df["class"].values.astype(np.int64)
 
+    num_classes = len(user_params.FAULT_TYPES)
+    if y_train.min() < 0 or y_test.min() < 0 or y_train.max() >= num_classes or y_test.max() >= num_classes:
+        raise ValueError(
+            f"Class labels must be in range [0, {num_classes - 1}] based on user_params.FAULT_TYPES."
+        )
+
     if list(x_test_df.columns) != list(x_train_df.columns):
         x_test_df = x_test_df.reindex(columns=x_train_df.columns)
         if x_test_df.isna().any().any():
@@ -95,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    model = build_fault_mlp(input_size=x_train.shape[1], num_classes=int(np.max(y_train) + 1)).to(device)
+    model = build_fault_mlp(input_size=x_train.shape[1], num_classes=num_classes).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
