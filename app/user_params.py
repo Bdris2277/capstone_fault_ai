@@ -36,8 +36,8 @@ FAULT_TYPES = {
     8:  "fault_L2_40",      # Voltage Sag Line 2 40%
     9:  "fault_L2_60",      # Voltage Sag Line 2 60%
     10: "fault_L2_80",      # Voltage Sag Line 2 80%
-    11: "fault_L3_0",       # Voltage Sag Line 3 0%
 
+    11: "fault_L3_0",       # Voltage Sag Line 3 0%
     12: "fault_L3_20",      # Voltage Sag Line 3 20%
     13: "fault_L3_40",      # Voltage Sag Line 3 40%
     14: "fault_L3_60",      # Voltage Sag Line 3 60%
