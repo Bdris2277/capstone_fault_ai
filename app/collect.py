@@ -28,6 +28,29 @@ class MeterRuntime:
     per_unit: PerUnitState
 
 
+def _decode_meter_timestamp(registers: list[int], *, fmt: str) -> int | None:
+    if len(registers) != 4:
+        return None
+
+    if fmt == "pac4200_unix_u32":
+        # PAC4200 manual: time stamp structure is 8 bytes where
+        # bytes 0..3 = Unix time (seconds since 1970-01-01 00:00:00),
+        # bytes 4..7 = not used (always 0).
+        return ((int(registers[0]) & 0xFFFF) << 16) | (int(registers[1]) & 0xFFFF)
+
+    if fmt == "u64_be":
+        regs = registers
+    elif fmt == "u64_le":
+        regs = list(reversed(registers))
+    else:
+        return None
+
+    value = 0
+    for reg in regs:
+        value = (value << 16) | (int(reg) & 0xFFFF)
+    return value
+
+
 def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location: str | None = None):
     """
     Collect data from all enabled meters.
@@ -80,6 +103,8 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     # CSV header - one meter's features per column group
     header = ["class", "fault_type", "fault_location"]
     for meter in meters:
+        if pipeline.meter_timestamp.enabled:
+            header.append(f"{meter.id}_meter_timestamp")
         header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
 
     # Open CSV
@@ -99,6 +124,10 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
 
     if not clients:
         csvfile.close()
+        try:
+            out_file.unlink(missing_ok=True)
+        except OSError:
+            pass
         print("No meter connections available. Collection aborted.")
         return 2
 
@@ -117,8 +146,24 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
             # Collect from all meters for this cycle
             for meter in meters:
                 if meter.id not in clients:
+                    if pipeline.meter_timestamp.enabled:
+                        row_data.append("")
                     row_data.extend(["0"] * len(pipeline.features.names))
                     continue
+
+                if pipeline.meter_timestamp.enabled:
+                    ts_raw = clients[meter.id].read_holding_registers(
+                        address=pipeline.meter_timestamp.address,
+                        count=pipeline.meter_timestamp.count,
+                        slave=meter.unit_id,
+                    )
+                    meter_ts: int | None = None
+                    if not ts_raw.isError():
+                        meter_ts = _decode_meter_timestamp(
+                            ts_raw.registers,
+                            fmt=pipeline.meter_timestamp.format,
+                        )
+                    row_data.append("" if meter_ts is None else str(meter_ts))
 
                 # Get data
                 raw = poll_holding_registers(

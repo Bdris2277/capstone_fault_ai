@@ -21,6 +21,10 @@ from capstone_fault_ai.app import user_params
 
 def _numeric_feature_frame(df: pd.DataFrame, *, context: str) -> pd.DataFrame:
     features = df.drop(columns=["class"])
+    timestamp_cols = [c for c in features.columns if c.endswith("_meter_timestamp")]
+    if timestamp_cols:
+        features = features.drop(columns=timestamp_cols)
+        print(f"[{context}] Ignoring timestamp metadata columns: {', '.join(timestamp_cols)}")
     numeric = features.select_dtypes(include=[np.number])
     dropped = [c for c in features.columns if c not in numeric.columns]
     if dropped:

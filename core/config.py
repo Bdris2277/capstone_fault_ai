@@ -47,11 +47,20 @@ class PerUnitConfig:
 
 
 @dataclass(frozen=True)
+class MeterTimestampConfig:
+    enabled: bool = False
+    address: int = 483
+    count: int = 4
+    format: str = "pac4200_unix_u32"  # "pac4200_unix_u32", "u64_be", or "u64_le"
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     modbus: ModbusConfig
     decode: DecodeConfig
     features: FeaturesConfig
     per_unit: PerUnitConfig
+    meter_timestamp: MeterTimestampConfig
 
 
 def _read_json(path: str | Path) -> dict[str, Any]:
@@ -101,6 +110,8 @@ def load_pipeline_config(path: str | Path) -> PipelineConfig:
     per_unit = raw["per_unit"]
     _require_keys(per_unit, keys=["enabled", "per_unit_feature_count", "baseline_samples"], context=f"{path} per_unit")
 
+    meter_ts_raw = raw.get("meter_timestamp", {})
+
     return PipelineConfig(
         modbus=ModbusConfig(address=int(raw["modbus"].get("address", 1)), count=int(raw["modbus"].get("count", 48))),
         decode=DecodeConfig(float_endianness=str(raw["decode"].get("float_endianness", "big"))),
@@ -112,5 +123,11 @@ def load_pipeline_config(path: str | Path) -> PipelineConfig:
             enabled=bool(per_unit["enabled"]),
             per_unit_feature_count=int(per_unit["per_unit_feature_count"]),
             baseline_samples=int(per_unit["baseline_samples"]),
+        ),
+        meter_timestamp=MeterTimestampConfig(
+            enabled=bool(meter_ts_raw.get("enabled", False)),
+            address=int(meter_ts_raw.get("address", 483)),
+            count=int(meter_ts_raw.get("count", 4)),
+            format=str(meter_ts_raw.get("format", "pac4200_unix_u32")).strip().lower(),
         ),
     )
