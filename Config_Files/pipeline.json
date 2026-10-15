@@ -8,7 +8,7 @@
   "per_unit": { "enabled": false, "per_unit_feature_count": 6, "baseline_samples": 1 },
   "meter_timestamp": {
     "enabled": true,
-    "address": 483,
+    "address": 797,
     "count": 4,
     "format": "pac4200_unix_u32"
   }
