@@ -114,7 +114,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     header = ["class", "fault_type", "fault_location"]
     for meter in meters:
         if pipeline.meter_timestamp.enabled:
-            header.append(f"{meter.id}_meter_timestamp")
             header.append(f"{meter.id}_meter_timestamp_utc")
         header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
 
@@ -159,7 +158,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
                 if meter.id not in clients:
                     if pipeline.meter_timestamp.enabled:
                         row_data.append("")
-                        row_data.append("")
                     row_data.extend(["0"] * len(pipeline.features.names))
                     continue
 
@@ -175,7 +173,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
                             ts_raw.registers,
                             fmt=pipeline.meter_timestamp.format,
                         )
-                    row_data.append("" if meter_ts is None else str(meter_ts))
                     row_data.append(_format_meter_timestamp_utc(meter_ts))
 
                 # Get data
