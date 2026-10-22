@@ -7,6 +7,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1].parent))
 
 import argparse
+import json
 from pathlib import Path
 
 import joblib
@@ -20,7 +21,7 @@ from capstone_fault_ai.app import user_params
 
 
 def _numeric_feature_frame(df: pd.DataFrame, *, context: str) -> pd.DataFrame:
-    features = df.drop(columns=["class"])
+    features = df.drop(columns=[c for c in ("class", "location") if c in df.columns])
     timestamp_cols = [
         c for c in features.columns
         if c.endswith("_meter_timestamp") or c.endswith("_meter_timestamp_utc")
@@ -44,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out_dir", default=user_params.ARTIFACTS_DIR)
     parser.add_argument("--epochs", type=int, default=int(user_params.EPOCHS))
     parser.add_argument("--batch_size", type=int, default=int(user_params.BATCH_SIZE))
+    parser.add_argument("--target", choices=["class", "location"], default="class",
+                        help="'class' = fault type, 'location' = which meter the fault hit.")
     parser.add_argument("--lr", type=float, default=float(user_params.LR))
     args = parser.parse_args(argv)
 
@@ -72,15 +75,29 @@ def main(argv: list[str] | None = None) -> int:
     if "class" not in train_df.columns or "class" not in test_df.columns:
         raise ValueError("Expected a 'class' column in both train and test CSVs.")
 
-    x_train_df = _numeric_feature_frame(train_df, context="train")
-    y_train = train_df["class"].values.astype(np.int64)
     x_test_df = _numeric_feature_frame(test_df, context="test")
-    y_test = test_df["class"].values.astype(np.int64)
+    prefix = ""
+    location_to_id: dict[str, int] = {}
 
-    num_classes = len(user_params.FAULT_TYPES)
-    if y_train.min() < 0 or y_test.min() < 0 or y_train.max() >= num_classes or y_test.max() >= num_classes:
-        raise ValueError(
-            f"Class labels must be in range [0, {num_classes - 1}] based on user_params.FAULT_TYPES."
+    if args.target == "location":
+        if "location" not in train_df.columns or "location" not in test_df.columns:
+            raise ValueError("Expected a 'location' column in both CSVs for --target location.")
+        location_names = sorted(set(train_df["location"].astype(str)) | set(test_df["location"].astype(str)))
+        location_to_id = {name: i for i, name in enumerate(location_names)}
+        y_train = train_df["location"].astype(str).map(location_to_id).values.astype(np.int64)
+        y_test = test_df["location"].astype(str).map(location_to_id).values.astype(np.int64)
+        num_classes = len(location_names)
+        prefix = "location_"
+        (out_dir / "location_labels.json").write_text(json.dumps(location_to_id, indent=2))
+        print(f"Location targets: {location_to_id}")
+    else:
+        y_train = train_df["class"].values.astype(np.int64)
+        y_test = test_df["class"].values.astype(np.int64)
+        num_classes = len(user_params.FAULT_TYPES)
+        if y_train.min() < 0 or y_test.min() < 0 or y_train.max() >= num_classes or y_test.max() >= num_classes:
+            raise ValueError(
+                f"Class labels must be in range [0, {num_classes - 1}] based on user_params.FAULT_TYPES."
+                f"Class labels must be in range [0, {num_classes - 1}] based on user_params.FAULT_TYPES."
         )
 
     if list(x_test_df.columns) != list(x_train_df.columns):
@@ -94,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     scaler = QuantileTransformer(output_distribution="normal", n_quantiles=min(1000, len(train_df)))
     x_train = scaler.fit_transform(x_train_raw)
     x_test = scaler.transform(x_test_raw)
-
+f"{prefix}
     joblib.dump(scaler, out_dir / "scaler.pkl")
 
     x_train_t = torch.tensor(x_train, dtype=torch.float32)
@@ -121,15 +138,21 @@ def main(argv: list[str] | None = None) -> int:
             device=device,
         )
         print(f"Epoch {epoch + 1}/{args.epochs} - loss={loss:.4f} acc={acc:.2f}%")
-
-    torch.save(model.state_dict(), out_dir / "model.pth")
+f"{prefix}model.pth")
 
     preds = predict_classes(model=model, loader=test_loader, device=device)
+    if args.target == "location":
+        id_to_name = {v: k for k, v in location_to_id.items()}
+        pred_values = [id_to_name.get(int(p), str(p)) for p in preds]
+    else:
+        pred_values = preds
+    pred_col = f"predicted_{args.target}"
     test_out = test_df.copy()
-    test_out.insert(0, "predicted_class", preds)
-    test_out.to_csv(out_dir / "test_with_predictions.csv", index=False)
+    test_out.insert(0, pred_col, pred_values)
+    test_out.to_csv(out_dir / f"{prefix}test_with_predictions.csv", index=False)
 
-    mismatched = test_out[test_out["class"] != test_out["predicted_class"]]
+    mismatched = test_out[test_out[args.target].astype(str) != test_out[pred_col].astype(str)]
+    mismatched.to_csv(out_dir / f"{prefix}t["class"] != test_out["predicted_class"]]
     mismatched.to_csv(out_dir / "mislabeled_rows.csv", index=False)
     print(f"Saved artifacts to: {out_dir}")
     print(f"Mislabeled rows: {len(mismatched)}")
