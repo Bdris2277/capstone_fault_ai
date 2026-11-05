@@ -12,6 +12,9 @@ if __package__ in (None, ""):
 
 from capstone_fault_ai.app import user_params
 from capstone_fault_ai.app.collect import collect_data
+from capstone_fault_ai.app.infer import main as infer_main
+from capstone_fault_ai.app.prepare_data import main as prepare_main
+from capstone_fault_ai.app.train import main as train_main
 
 
 def show_menu():
@@ -19,12 +22,15 @@ def show_menu():
     print("\n" + "="*50)
     print("AI FAULT DETECTION")
     print("="*50)
-    print("1. Collect Data(Only thing that works right now)")
-    print("2. Train Model(Not implemented yet)")
-    print("3. Run Inference(Not implemented yet)")
+    print("1. Collect Data")
+    print("2. Prepare Data (window + split)")
+    print("3. Train Fault-Type Model (RandomForest)")
+    print("4. Train Location Model (RandomForest)")
+    print("5. Run Live Inference (Fault Type)")
+    print("6. Run Live Inference (Location)")
     print("="*50)
     
-    choice = input("What do you want to do? (1-3): ").strip()
+    choice = input("What do you want to do? (1-6): ").strip()
     return choice
 
 
@@ -46,10 +52,24 @@ def main():
         collect_data(duration_s=duration, class_label=label)
     
     elif choice == "2":
-        print("\nTrain Model - coming soon")
+        print("\nPreparing data...")
+        raise SystemExit(prepare_main())
     
     elif choice == "3":
-        print("\nRun Inference - coming soon")
+        print("\nTraining fault-type model...")
+        raise SystemExit(train_main(["--target", "class"]))
+
+    elif choice == "4":
+        print("\nTraining location model...")
+        raise SystemExit(train_main(["--target", "location"]))
+
+    elif choice == "5":
+        print("\nStarting live inference (fault type)...")
+        raise SystemExit(infer_main(["--target", "class"]))
+
+    elif choice == "6":
+        print("\nStarting live inference (location)...")
+        raise SystemExit(infer_main(["--target", "location"]))
     
     else:
         print("\nInvalid choice")

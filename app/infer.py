@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-# ruff: noqa: I001
-
 if __package__ in (None, ""):
     import sys
     from pathlib import Path
@@ -10,14 +8,15 @@ if __package__ in (None, ""):
 
 import argparse
 import csv
+import json
 import time
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
 import joblib
 import numpy as np
 
-from capstone_fault_ai.Model.model import build_fault_mlp
 from capstone_fault_ai.app import user_params
 from capstone_fault_ai.core.config import load_meters_config, load_pipeline_config
 from capstone_fault_ai.core.modbus import poll_holding_registers
@@ -27,6 +26,7 @@ from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_
 @dataclass
 class MeterRuntime:
     per_unit: PerUnitState
+    recent_features: deque[np.ndarray]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,10 +40,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--artifacts_dir", default=user_params.ARTIFACTS_DIR)
     parser.add_argument("--out_csv", default=user_params.INFER_OUT_CSV)
+    parser.add_argument("--target", choices=["class", "location"], default="class")
     args = parser.parse_args(argv)
 
     try:
-        import torch
         from pymodbus.client import ModbusTcpClient
     except ModuleNotFoundError as exc:
         missing = str(exc).split()[-1]
@@ -78,38 +78,64 @@ def main(argv: list[str] | None = None) -> int:
     pipeline = load_pipeline_config(args.pipeline_json)
 
     artifacts_dir = Path(args.artifacts_dir)
-    if not (artifacts_dir / "scaler.pkl").exists() or not (artifacts_dir / "model.pth").exists():
-        print(f"Missing artifacts in {artifacts_dir}. Train first (creates scaler.pkl and model.pth).")
-        return 2
-    scaler = joblib.load(artifacts_dir / "scaler.pkl")
-
-    input_size = len(pipeline.features.names)
-    scaler_features = getattr(scaler, "n_features_in_", None)
-    if scaler_features is not None and int(scaler_features) != input_size:
+    prefix = "location_" if args.target == "location" else ""
+    model_path = artifacts_dir / f"{prefix}rf_model.pkl"
+    feature_cols_path = artifacts_dir / f"{prefix}feature_columns.json"
+    if not model_path.exists() or not feature_cols_path.exists():
         print(
-            "Feature mismatch between pipeline and scaler: "
-            f"pipeline={input_size}, scaler={int(scaler_features)}. Retrain required."
+            f"Missing artifacts in {artifacts_dir}. Train first "
+            f"(creates {prefix}rf_model.pkl and {prefix}feature_columns.json)."
         )
         return 2
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-
-    model = build_fault_mlp(input_size=input_size, num_classes=len(user_params.FAULT_TYPES))
-    try:
-        model.load_state_dict(torch.load(artifacts_dir / "model.pth", map_location=device))
-    except RuntimeError as exc:
-        print(f"Model artifact is incompatible with current settings: {exc}")
-        print("Retrain the model with current pipeline and class settings.")
+    model = joblib.load(model_path)
+    feature_columns = json.loads(feature_cols_path.read_text(encoding="utf-8"))
+    if not isinstance(feature_columns, list) or not feature_columns:
+        print(f"Invalid feature column metadata in {feature_cols_path}")
         return 2
-    model.to(device)
-    model.eval()
 
-    runtimes = {m.id: MeterRuntime(per_unit=PerUnitState()) for m in meters_cfg.meters}
+    base_feature_count = len(pipeline.features.names)
+    if len(feature_columns) % base_feature_count != 0:
+        print(
+            "Feature metadata is incompatible with current pipeline: "
+            f"metadata_columns={len(feature_columns)}, base_features={base_feature_count}."
+        )
+        return 2
+    window_rows = len(feature_columns) // base_feature_count
+    if window_rows <= 0:
+        print("Invalid window size derived from feature metadata.")
+        return 2
+
+    location_id_to_name: dict[int, str] = {}
+    if args.target == "location":
+        labels_path = artifacts_dir / "location_labels.json"
+        if not labels_path.exists():
+            print(f"Missing location label mapping at {labels_path}. Retrain location model first.")
+            return 2
+        location_to_id = json.loads(labels_path.read_text(encoding="utf-8"))
+        location_id_to_name = {int(v): str(k) for k, v in location_to_id.items()}
+
+    input_size = len(pipeline.features.names)
+    model_features = getattr(model, "n_features_in_", None)
+    if model_features is not None and int(model_features) != len(feature_columns):
+        print(
+            "Feature mismatch between model and saved feature columns: "
+            f"model={int(model_features)}, metadata={len(feature_columns)}. Retrain required."
+        )
+        return 2
+
+    print(f"Loaded RandomForest target='{args.target}' from: {model_path}")
+    print(f"Window rows: {window_rows}  Base features per row: {input_size}")
+
+    runtimes = {
+        m.id: MeterRuntime(per_unit=PerUnitState(), recent_features=deque(maxlen=window_rows))
+        for m in meters_cfg.meters
+    }
 
     out_path = Path(args.out_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     file_exists = out_path.exists()
+    print(f"Writing predictions to: {out_path}")
 
     clients: dict[str, ModbusTcpClient] = {}
     try:
@@ -132,10 +158,11 @@ def main(argv: list[str] | None = None) -> int:
                         "ts_unix_s",
                         "meter_id",
                         *pipeline.features.names,
-                        "predicted_class",
-                        "predicted_fault_type",
+                        "predicted_value",
+                        "predicted_label",
                         "predicted_fault_location",
                         "confidence_pct",
+                        "target",
                     ]
                 )
 
@@ -178,28 +205,47 @@ def main(argv: list[str] | None = None) -> int:
                                 baseline=baseline,
                             )
 
-                        scaled = scaler.transform(features.reshape(1, -1))
-                        input_tensor = torch.tensor(scaled, dtype=torch.float32).to(device)
+                        meter_runtime = runtimes[meter.id]
+                        meter_runtime.recent_features.append(features.astype(float))
+                        if len(meter_runtime.recent_features) < window_rows:
+                            continue
 
-                        with torch.no_grad():
-                            logits = model(input_tensor)
-                            probs = torch.softmax(logits, dim=1)
-                            conf, pred = probs.max(1)
+                        window_vec = np.concatenate(list(meter_runtime.recent_features), axis=0).reshape(1, -1)
+                        pred_value = model.predict(window_vec)[0]
+                        if hasattr(model, "predict_proba"):
+                            conf = float(np.max(model.predict_proba(window_vec)) * 100.0)
+                        else:
+                            conf = float("nan")
 
-                        pred_class = int(pred.item())
-                        pred_fault_type = user_params.FAULT_TYPES.get(pred_class, f"class_{pred_class}")
+                        if args.target == "location":
+                            pred_label = location_id_to_name.get(int(pred_value), str(pred_value))
+                            predicted_fault_location = pred_label
+                        else:
+                            pred_label = user_params.FAULT_TYPES.get(int(pred_value), f"class_{int(pred_value)}")
+                            predicted_fault_location = meter.id
 
                         writer.writerow(
                             [
                                 f"{ts:.3f}",
                                 meter.id,
                                 *[f"{v:.6g}" for v in features.tolist()],
-                                pred_class,
-                                pred_fault_type,
-                                meter.id,
-                                f"{(conf.item() * 100):.2f}",
+                                pred_value,
+                                pred_label,
+                                predicted_fault_location,
+                                "" if np.isnan(conf) else f"{conf:.2f}",
+                                args.target,
                             ]
                         )
+                        conf_txt = "n/a" if np.isnan(conf) else f"{conf:.2f}%"
+                        print(
+                            f"[{args.target}] meter={meter.id} pred={pred_label} "
+                            f"(value={pred_value}) conf={conf_txt}"
+                        )
+                        if args.target == "class" and int(pred_value) != 0:
+                            print(
+                                f"ALERT: fault-like pattern at source meter '{meter.id}' "
+                                f"-> predicted type '{pred_label}'"
+                            )
                         out_file.flush()
 
                     elapsed = time.monotonic() - loop_start

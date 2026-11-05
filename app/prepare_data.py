@@ -37,6 +37,8 @@ WINDOW_ROWS = 10        # consecutive rows per sample (10 rows x 0.2 s = 2 s)
 STRIDE_ROWS = 5         # step between window starts (overlap = WINDOW_ROWS - STRIDE_ROWS)
 TRAIN_FRACTION = 0.8    # fraction of event FILES per class going to train
 RANDOM_SEED = 42
+FAULT_WINDOW_KEEP_FRACTION = 0.35  # keep top anomaly windows from fault files
+FAULT_WINDOW_KEEP_MIN = 6          # minimum windows to keep for any fault file
 
 
 def _feature_columns(df: pd.DataFrame) -> list[str]:
@@ -52,6 +54,37 @@ def _windows_from_file(df: pd.DataFrame, features: list[str]) -> np.ndarray:
     values = df[features].to_numpy(dtype=float)
     starts = range(0, len(values) - WINDOW_ROWS + 1, STRIDE_ROWS)
     return np.stack([values[s:s + WINDOW_ROWS].reshape(-1) for s in starts]) if len(starts) else np.empty((0, 0))
+
+
+def _fault_window_indices(df: pd.DataFrame, features: list[str], total_windows: int) -> np.ndarray:
+    """Select likely-fault windows by anomaly score, so nominal edges are not mislabeled."""
+    if total_windows <= 0:
+        return np.asarray([], dtype=int)
+
+    signal_cols = [
+        c for c in features
+        if ("_V_" in c or "_A_" in c or "_W_" in c or "_VA_" in c)
+    ]
+    if not signal_cols:
+        signal_cols = features
+
+    vals = df[signal_cols].to_numpy(dtype=float)
+    baseline = np.median(vals, axis=0)
+    denom = np.maximum(np.abs(baseline), 1e-6)
+    row_score = np.mean(np.abs((vals - baseline) / denom), axis=1)
+
+    starts = np.arange(0, len(vals) - WINDOW_ROWS + 1, STRIDE_ROWS)
+    if len(starts) == 0:
+        return np.asarray([], dtype=int)
+
+    win_scores = np.asarray([
+        float(np.mean(row_score[s:s + WINDOW_ROWS]))
+        for s in starts
+    ])
+
+    keep_n = min(total_windows, max(FAULT_WINDOW_KEEP_MIN, round(total_windows * FAULT_WINDOW_KEEP_FRACTION)))
+    top_idx = np.argsort(win_scores)[-keep_n:]
+    return np.sort(top_idx)
 
 
 def _split_files_by_class(file_labels: dict[Path, int]) -> tuple[list[Path], list[Path]]:
@@ -121,6 +154,12 @@ def main():
         if len(windows) == 0:
             print(f"  Skipping {csv_file.name}: fewer than {WINDOW_ROWS} rows.")
             continue
+        if label != 0:
+            keep_idx = _fault_window_indices(df, feature_names, len(windows))
+            windows = windows[keep_idx]
+            if len(windows) == 0:
+                print(f"  Skipping {csv_file.name}: no fault windows selected.")
+                continue
         file_labels[csv_file] = label
         file_locations[csv_file] = location
         file_windows[csv_file] = windows

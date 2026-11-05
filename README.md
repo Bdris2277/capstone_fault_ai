@@ -1,56 +1,44 @@
-# Capstone Fault AI (Your Version)
+# Capstone Fault AI
 
-This folder is a clean, standalone implementation inspired by the prior project, without modifying their code.
+Multi-meter Modbus fault data collection, windowed dataset prep, RandomForest training, and live inference.
 
 ## What it does
-- Trains a small neural network on labeled CSV data (`class` + feature columns)
-- Saves a scaler (`.pkl`) and model weights (`.pth`)
-- Polls **multiple Modbus-TCP meters (multiple IPs)** and runs live inference on a Jetson
+- Collects synchronized features from multiple PAC4200 meters (`app/collect.py`).
+- Builds event windows and splits train/test by file (`app/prepare_data.py`).
+- Trains RandomForest classifiers for:
+  - fault type (`--target class`)
+  - fault location (`--target location`)
+- Runs live inference with rolling windows (`app/infer.py`).
 
-## Folder layout
-- `app/` CLI entrypoints
-- `core/` config, Modbus, preprocessing utilities
-- `ml/` model + train/eval code
-- `config_examples/` example JSON configs
+## Project layout
+- `app/` runnable scripts (`collect`, `prepare_data`, `train`, `infer`, `run`)
+- `core/` config/modbus/preprocess helpers
+- `Config_Files/` meters and pipeline config
+- `data_out/` raw captures + prepared train/test CSVs
+- `capstone_fault_ai_artifacts/` trained model artifacts and prediction outputs
 
-## Jetson quickstart
-1) Create a venv and install deps:
+## Quick start
+1. Create environment and install deps:
    - `python3 -m venv .venv && source .venv/bin/activate`
    - `pip install -r requirements.txt`
-   - Install `torch` using the PyTorch-for-Jetson instructions for your JetPack version
+2. Configure:
+   - `Config_Files/meters.json`
+   - `Config_Files/pipeline.json`
+   - `app/user_params.py`
+3. Collect event files (normal and fault runs) into `data_out/`.
+4. Prepare data:
+   - `python -m capstone_fault_ai.app.prepare_data`
+5. Train:
+   - Fault type: `python -m capstone_fault_ai.app.train --target class`
+   - Fault location: `python -m capstone_fault_ai.app.train --target location`
+6. Infer live:
+   - Fault type: `python -m capstone_fault_ai.app.infer --target class`
+   - Fault location: `python -m capstone_fault_ai.app.infer --target location`
 
-2) One-click flow (recommended):
-   - `python app/run.py`
-   - Choose `0) Setup (dependencies)` once (installs from `offline/wheels/`)
-   - Edit `meters.json` + `pipeline.json` directly (copy from `config_examples/` if needed)
-   - Choose `1) Collect` for each condition (writes `data_out/collected.csv`); enable/disable meters in `meters.json`
-   - Choose `2) Train` (auto-splits into `data_out/train_data.csv` + `data_out/test_data.csv` if needed)
-   - Choose `3) Live inference` (writes `capstone_fault_ai_artifacts/predictions_live.csv`)
-2) Copy and edit configs:
-   - `capstone_fault_ai/config_examples/meters.example.json` → `meters.json`
-   - `capstone_fault_ai/config_examples/pipeline.example.json` → `pipeline.json`
-3) Collect labeled training data from meters (writes `class` + feature columns):
-   - `python app/collect.py --meters_json meters.json --pipeline_json pipeline.json --class_label 0 --duration_s 30 --out_csv data_out/train_data.csv`
-   - Optional: split per meter: `--split_by_meter --out_dir data_out`
-4) Train:
-   - `python app/train.py --train_csv data_out/train_data.csv --test_csv data_out/test_data.csv --out_dir capstone_fault_ai_artifacts`
-5) Run live inference (writes an append-only CSV):
-   - `python app/infer.py --meters_json meters.json --pipeline_json pipeline.json --artifacts_dir capstone_fault_ai_artifacts`
+## Interactive launcher
+Run `python -m capstone_fault_ai.app.run` and select from menu options.
 
-## One-click (PyCharm)
-- Run `python app/run.py` and use the menu to collect, train, and infer without remembering arguments.
-
-## Run individual files (PyCharm)
-- Edit defaults in `app/user_params.py`.
-- Run `app/collect.py` (it only needs `meters.json` + `pipeline.json`; change label via `app/user_params.py:COLLECT_CLASS_LABEL`).
-- Run `app/train.py` (uses `app/user_params.py` paths/hyperparams).
-- Run `app/infer.py` (uses `app/user_params.py` paths and writes `INFER_OUT_CSV`).
-
-## Choose meters
-- Enable/disable meters in `meters.json` using `"enabled": true/false`.
-- Optional: `app/collect.py` / `app/infer.py` support `--meter_ids meter_1,meter_3` to poll only a subset.
-
-## Jetson offline dependencies
-- Put Jetson wheels in `offline/wheels/` and edit `offline/requirements_jetson.txt`.
-- `Setup` in `app/run.py` auto-runs an offline install if `app/user_params.py:AUTO_INSTALL_OFFLINE_DEPS` is enabled.
-- Details: `offline/README_JETSON_OFFLINE.md`.
+## Notes
+- `prepare_data` windows are sequence-aware and split by event file to avoid leakage.
+- Fault windows are filtered to keep disturbance-heavy segments from nominal→fault→nominal recordings.
+- For good detection, gather many fault events; severe class imbalance will otherwise bias toward `normal`.
