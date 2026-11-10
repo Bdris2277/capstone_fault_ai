@@ -11,8 +11,6 @@ Everything else is automatic.
 # STEP 1: Define your fault types & Location (what should we detect and where)
 # ============================================================================
 # Change the names to match what you're testing.
-# Example: 0=healthy, 1=under_voltage, 2=over_voltage
-
 # Fault location options (set COLLECT_FAULT_LOCATION to one meter ID):
 #   - Wind
 #   - BalancePoint
