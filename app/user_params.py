@@ -55,9 +55,8 @@ FAULT_TYPES = {
 COLLECT_DURATION_S = 120.0      # Seconds E.g(10 = collect for 10.0 seconds)
 
 COLLECT_CLASS_LABEL = 10
-COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_L1_20_1_200.csv). Set to None to disable.
 COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_1_20_1_200.csv). Set to None to disable.
-COLLECT_FAULT_LOCATION = "PhotoVoltaic"  # Fault location label to store in collected CSV
+COLLECT_FAULT_LOCATION = "Wind"  # Fault location label to store in collected CSV
 
 # ============================================================================
 # STEP 3: Training settings (how should the model learn)

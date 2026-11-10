@@ -1198,5 +1198,8 @@
   "PhotoVoltaic_PF_L3_t9",
   "PhotoVoltaic_THD_L1_t9",
   "PhotoVoltaic_THD_L2_t9",
-  "PhotoVoltaic_THD_L3_t9"
+  "PhotoVoltaic_THD_L3_t9",
+  "window_start_s",
+  "window_dt_mean_s",
+  "window_dt_std_s"
 ]
