@@ -27,6 +27,8 @@ from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_
 class MeterRuntime:
     per_unit: PerUnitState
     recent_features: deque[np.ndarray]
+    recent_times_s: deque[float]
+    stream_start_s: float | None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -96,12 +98,26 @@ def main(argv: list[str] | None = None) -> int:
 
     base_feature_count = len(pipeline.features.names)
     if len(feature_columns) % base_feature_count != 0:
+        # Newer training may append per-window time features after flattened sensor features.
+        # Detect that case and account for it here.
+        residual = len(feature_columns) % base_feature_count
+        if residual != 3:
+            print(
+                "Feature metadata is incompatible with current pipeline: "
+                f"metadata_columns={len(feature_columns)}, base_features={base_feature_count}."
+            )
+            return 2
+
+    extra_time_features = len(feature_columns) % base_feature_count
+    flat_sensor_feature_count = len(feature_columns) - extra_time_features
+    if flat_sensor_feature_count <= 0 or flat_sensor_feature_count % base_feature_count != 0:
         print(
-            "Feature metadata is incompatible with current pipeline: "
+            "Feature metadata has invalid shape: "
             f"metadata_columns={len(feature_columns)}, base_features={base_feature_count}."
         )
         return 2
-    window_rows = len(feature_columns) // base_feature_count
+
+    window_rows = flat_sensor_feature_count // base_feature_count
     if window_rows <= 0:
         print("Invalid window size derived from feature metadata.")
         return 2
@@ -125,10 +141,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     print(f"Loaded RandomForest target='{args.target}' from: {model_path}")
-    print(f"Window rows: {window_rows}  Base features per row: {input_size}")
+    print(
+        f"Window rows: {window_rows}  Base features per row: {input_size} "
+        f"Extra time features: {extra_time_features}"
+    )
 
     runtimes = {
-        m.id: MeterRuntime(per_unit=PerUnitState(), recent_features=deque(maxlen=window_rows))
+        m.id: MeterRuntime(
+            per_unit=PerUnitState(),
+            recent_features=deque(maxlen=window_rows),
+            recent_times_s=deque(maxlen=window_rows),
+            stream_start_s=None,
+        )
         for m in meters_cfg.meters
     }
 
@@ -206,11 +230,31 @@ def main(argv: list[str] | None = None) -> int:
                             )
 
                         meter_runtime = runtimes[meter.id]
+                        if meter_runtime.stream_start_s is None:
+                            meter_runtime.stream_start_s = float(ts)
                         meter_runtime.recent_features.append(features.astype(float))
+                        meter_runtime.recent_times_s.append(float(ts))
                         if len(meter_runtime.recent_features) < window_rows:
                             continue
 
-                        window_vec = np.concatenate(list(meter_runtime.recent_features), axis=0).reshape(1, -1)
+                        window_vec = np.concatenate(list(meter_runtime.recent_features), axis=0)
+                        if extra_time_features == 3:
+                            times = np.asarray(meter_runtime.recent_times_s, dtype=float)
+                            if len(times) >= 2:
+                                diffs = np.diff(times)
+                                dt_mean = float(np.mean(diffs))
+                                dt_std = float(np.std(diffs))
+                            else:
+                                dt_mean = float(meters_cfg.poll_interval_s)
+                                dt_std = 0.0
+                            start_ref = float(meter_runtime.stream_start_s or times[0])
+                            window_start_s = float(times[0] - start_ref)
+                            window_vec = np.concatenate(
+                                [window_vec, np.asarray([window_start_s, dt_mean, dt_std], dtype=float)],
+                                axis=0,
+                            )
+
+                        window_vec = window_vec.reshape(1, -1)
                         pred_value = model.predict(window_vec)[0]
                         if hasattr(model, "predict_proba"):
                             conf = float(np.max(model.predict_proba(window_vec)) * 100.0)
