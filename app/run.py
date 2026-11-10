@@ -41,15 +41,17 @@ def main():
     if choice == "1":
         duration = user_params.COLLECT_DURATION_S
         label = user_params.COLLECT_CLASS_LABEL
+        ms_tag = getattr(user_params, "COLLECT_FILENAME_MS_TAG", None)
         
         print("\n" + "="*50)
         print("METER DATA COLLECTION")
         print("="*50)
         print(f"Duration: {duration}s")
         print(f"Class label: {label}")
+        print(f"Filename ms tag: {ms_tag}")
         print("="*50 + "\n")
         
-        collect_data(duration_s=duration, class_label=label)
+        collect_data(duration_s=duration, class_label=label, filename_ms_tag=ms_tag)
     
     elif choice == "2":
         print("\nPreparing data...")

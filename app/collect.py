@@ -13,15 +13,15 @@ if __package__ in (None, ""):
 import csv
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
+from capstone_fault_ai.app import user_params
 from capstone_fault_ai.core.config import load_meters_config, load_pipeline_config
 from capstone_fault_ai.core.modbus import poll_holding_registers
 from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_per_unit
-from capstone_fault_ai.app import user_params
 
 
 @dataclass
@@ -56,12 +56,17 @@ def _format_meter_timestamp_utc(timestamp: int | None) -> str:
     if timestamp is None:
         return ""
     try:
-        return datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat()
+        return datetime.fromtimestamp(int(timestamp), tz=UTC).isoformat()
     except (OverflowError, OSError, ValueError):
         return ""
 
 
-def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location: str | None = None):
+def collect_data(
+    duration_s: float = 60.0,
+    class_label: int = 0,
+    fault_location: str | None = None,
+    filename_ms_tag: int | None = None,
+):
     """
     Collect data from all enabled meters.
     
@@ -102,13 +107,21 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     out_dir = Path(user_params.COLLECT_OUT_CSV).parent
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    poll_ms = int(round(float(meters_cfg.poll_interval_s) * 1000.0))
-    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # Optional suffix for labeling file name with fault duration in ms.
+    # Priority: function argument > user_params.COLLECT_FILENAME_MS_TAG.
+    if filename_ms_tag is None:
+        filename_ms_tag = getattr(user_params, "COLLECT_FILENAME_MS_TAG", None)
 
-    # Find next auto-increment number for this class
+    ms_suffix = ""
+    if filename_ms_tag is not None:
+        if int(filename_ms_tag) <= 0:
+            raise ValueError("filename_ms_tag must be a positive integer when provided.")
+        ms_suffix = f"_{int(filename_ms_tag)}"
+
+    # Simple auto-increment filename per class (example: fault_L1_20_1.csv or fault_L1_20_1_200.csv)
     counter = 1
     while True:
-        out_file = out_dir / f"{class_name}_{counter}_{poll_ms}ms_{run_stamp}.csv"
+        out_file = out_dir / f"{class_name}_{counter}{ms_suffix}.csv"
         if not out_file.exists():
             break
         counter += 1
@@ -119,11 +132,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
         if pipeline.meter_timestamp.enabled:
             header.append(f"{meter.id}_meter_timestamp_utc")
         header.extend([f"{meter.id}_{fname}" for fname in pipeline.features.names])
-
-    # Open CSV
-    csvfile = open(out_file, "w", newline="", encoding="utf-8")
-    writer = csv.writer(csvfile)
-    writer.writerow(header)
 
     # Connect to meters
     clients = {}
@@ -136,11 +144,6 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
         clients[meter.id] = client
 
     if not clients:
-        csvfile.close()
-        try:
-            out_file.unlink(missing_ok=True)
-        except OSError:
-            pass
         print("No meter connections available. Collection aborted.")
         return 2
 
@@ -152,85 +155,88 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     rows = 0
 
     try:
-        while time.monotonic() < deadline:
-            loop_start = time.monotonic()
-            row_data = [class_label, fault_type_name, fault_location_name]
+        with open(out_file, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(header)
 
-            # Collect from all meters for this cycle
-            for meter in meters:
-                if meter.id not in clients:
+            while time.monotonic() < deadline:
+                loop_start = time.monotonic()
+                row_data = [class_label, fault_type_name, fault_location_name]
+
+                # Collect from all meters for this cycle
+                for meter in meters:
+                    if meter.id not in clients:
+                        if pipeline.meter_timestamp.enabled:
+                            row_data.append("")
+                        row_data.extend(["0"] * len(pipeline.features.names))
+                        continue
+
                     if pipeline.meter_timestamp.enabled:
-                        row_data.append("")
-                    row_data.extend(["0"] * len(pipeline.features.names))
-                    continue
-
-                if pipeline.meter_timestamp.enabled:
-                    ts_raw = clients[meter.id].read_holding_registers(
-                        address=pipeline.meter_timestamp.address,
-                        count=pipeline.meter_timestamp.count,
-                        slave=meter.unit_id,
-                    )
-                    meter_ts: int | None = None
-                    if not ts_raw.isError():
-                        meter_ts = _decode_meter_timestamp(
-                            ts_raw.registers,
-                            fmt=pipeline.meter_timestamp.format,
+                        ts_raw = clients[meter.id].read_holding_registers(
+                            address=pipeline.meter_timestamp.address,
+                            count=pipeline.meter_timestamp.count,
+                            slave=meter.unit_id,
                         )
-                    row_data.append(_format_meter_timestamp_utc(meter_ts))
+                        meter_ts: int | None = None
+                        if not ts_raw.isError():
+                            meter_ts = _decode_meter_timestamp(
+                                ts_raw.registers,
+                                fmt=pipeline.meter_timestamp.format,
+                            )
+                        row_data.append(_format_meter_timestamp_utc(meter_ts))
 
-                # Get data
-                raw = poll_holding_registers(
-                    clients[meter.id],
-                    ip=meter.ip,
-                    unit_id=meter.unit_id,
-                    address=pipeline.modbus.address,
-                    count=pipeline.modbus.count,
-                    float_endianness=pipeline.decode.float_endianness,
-                )
-
-                if raw is None:
-                    row_data.extend(["0"] * len(pipeline.features.names))
-                    continue
-
-                # Extract features
-                features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
-                if features.shape[0] != len(pipeline.features.names):
-                    row_data.extend(["0"] * len(pipeline.features.names))
-                    continue
-
-                # Handle NaN/Inf
-                features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
-
-                # Apply normalization if enabled
-                if pipeline.per_unit.enabled:
-                    baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
-                        features, baseline_samples=pipeline.per_unit.baseline_samples
+                    # Get data
+                    raw = poll_holding_registers(
+                        clients[meter.id],
+                        ip=meter.ip,
+                        unit_id=meter.unit_id,
+                        address=pipeline.modbus.address,
+                        count=pipeline.modbus.count,
+                        float_endianness=pipeline.decode.float_endianness,
                     )
-                    if baseline is not None:
-                        features = to_per_unit(
-                            features,
-                            per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
-                            baseline=baseline,
+
+                    if raw is None:
+                        row_data.extend(["0"] * len(pipeline.features.names))
+                        continue
+
+                    # Extract features
+                    features = select_features(raw, drop_indices_0_based=pipeline.features.drop_indices_0_based)
+                    if features.shape[0] != len(pipeline.features.names):
+                        row_data.extend(["0"] * len(pipeline.features.names))
+                        continue
+
+                    # Handle NaN/Inf
+                    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+
+                    # Apply normalization if enabled
+                    if pipeline.per_unit.enabled:
+                        baseline = runtimes[meter.id].per_unit.update_and_get_baseline(
+                            features, baseline_samples=pipeline.per_unit.baseline_samples
                         )
+                        if baseline is not None:
+                            features = to_per_unit(
+                                features,
+                                per_unit_feature_count=pipeline.per_unit.per_unit_feature_count,
+                                baseline=baseline,
+                            )
 
-                # Add this meter's features to the row
-                row_data.extend([f"{v:.6g}" for v in features.tolist()])
+                    # Add this meter's features to the row
+                    row_data.extend([f"{v:.6g}" for v in features.tolist()])
 
-            # Write row
-            writer.writerow(row_data)
-            rows += 1
-            print(f"Row {rows}")
+                # Write row
+                writer.writerow(row_data)
+                rows += 1
+                print(f"Row {rows}")
 
-            csvfile.flush()
+                csvfile.flush()
 
-            # Pace polling
-            elapsed = time.monotonic() - loop_start
-            sleep_s = meters_cfg.poll_interval_s - elapsed
-            if sleep_s > 0:
-                time.sleep(sleep_s)
+                # Pace polling
+                elapsed = time.monotonic() - loop_start
+                sleep_s = meters_cfg.poll_interval_s - elapsed
+                if sleep_s > 0:
+                    time.sleep(sleep_s)
 
     finally:
-        csvfile.close()
         for client in clients.values():
             try:
                 client.close()
@@ -248,6 +254,7 @@ if __name__ == "__main__":
     # Simple args: duration and class label
     duration = 60.0
     label = 0
+    ms_tag: int | None = None
     
     if len(sys.argv) > 1:
         try:
@@ -260,7 +267,13 @@ if __name__ == "__main__":
             label = int(sys.argv[2])
         except ValueError:
             pass
+
+    if len(sys.argv) > 3:
+        try:
+            ms_tag = int(sys.argv[3])
+        except ValueError:
+            pass
     
-    exit_code = collect_data(duration_s=duration, class_label=label)
+    exit_code = collect_data(duration_s=duration, class_label=label, filename_ms_tag=ms_tag)
     raise SystemExit(exit_code)
 

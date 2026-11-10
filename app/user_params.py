@@ -21,7 +21,6 @@ Everything else is automatic.
 #   - PhotoVoltaic
 # For class 0 (normal), location is ignored and saved as "none" automatically.
 
-COLLECT_FAULT_LOCATION = "PhotoVoltaic"  # Fault location label to store in collected CSV
 FAULT_TYPES = {
     0:  "normal",           # The good/healthy state
 
@@ -48,7 +47,11 @@ FAULT_TYPES = {
 # STEP 2: Collection settings (how long to collect data)
 # ============================================================================
 COLLECT_DURATION_S = 180.0      # Seconds E.g(10 = collect for 10.0 seconds)
+
 COLLECT_CLASS_LABEL = 5
+COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_L1_20_1_200.csv). Set to None to disable.
+COLLECT_FAULT_LOCATION = "PhotoVoltaic"  # Fault location label to store in collected CSV
+
          # Which fault type are you collecting now?
                                 # Change to 1, 2, etc. when you test different faults
 
