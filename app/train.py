@@ -36,6 +36,39 @@ def _numeric_feature_frame(df: pd.DataFrame, *, context: str) -> pd.DataFrame:
     return numeric
 
 
+def _oversample_minority_classes(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    random_state: int,
+    target_ratio_to_majority: float,
+    skip_label: int | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Oversample minority classes up to ratio*majority_count using replacement."""
+    if len(y) == 0:
+        return x, y
+
+    rng = np.random.default_rng(random_state)
+    labels, counts = np.unique(y, return_counts=True)
+    major_count = int(counts.max())
+    target_count = max(1, int(round(major_count * target_ratio_to_majority)))
+
+    all_indices: list[np.ndarray] = []
+    for label, count in zip(labels.tolist(), counts.tolist()):
+        idx = np.where(y == label)[0]
+        all_indices.append(idx)
+        if skip_label is not None and int(label) == int(skip_label):
+            continue
+        if count < target_count:
+            need = target_count - int(count)
+            extra = rng.choice(idx, size=need, replace=True)
+            all_indices.append(extra)
+
+    final_idx = np.concatenate(all_indices)
+    rng.shuffle(final_idx)
+    return x[final_idx], y[final_idx]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Train RandomForest model from labeled CSVs.")
     parser.add_argument("--train_csv", default=user_params.TRAIN_CSV)
@@ -46,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max_depth", type=int, default=0, help="0 means unlimited depth.")
     parser.add_argument("--min_samples_leaf", type=int, default=1)
     parser.add_argument("--random_state", type=int, default=42)
+    parser.add_argument(
+        "--oversample_ratio",
+        type=float,
+        default=0.6,
+        help="For class target: upsample each fault class to this ratio of majority class windows (0 disables).",
+    )
     args = parser.parse_args(argv)
 
     if not Path(args.train_csv).exists() or not Path(args.test_csv).exists():
@@ -105,6 +144,19 @@ def main(argv: list[str] | None = None) -> int:
 
     x_train = x_train_df.values
     x_test = x_test_df.values
+
+    if args.target == "class" and float(args.oversample_ratio) > 0:
+        before = pd.Series(y_train).value_counts().sort_index().to_dict()
+        x_train, y_train = _oversample_minority_classes(
+            x_train,
+            y_train,
+            random_state=int(args.random_state),
+            target_ratio_to_majority=float(args.oversample_ratio),
+            skip_label=0,
+        )
+        after = pd.Series(y_train).value_counts().sort_index().to_dict()
+        print(f"Class counts before oversampling: {before}")
+        print(f"Class counts after oversampling:  {after}")
 
     print(f"Training RandomForest on {len(x_train)} samples, {x_train.shape[1]} features...")
     model.fit(x_train, y_train)

@@ -102,10 +102,13 @@ def collect_data(duration_s: float = 60.0, class_label: int = 0, fault_location:
     out_dir = Path(user_params.COLLECT_OUT_CSV).parent
     out_dir.mkdir(parents=True, exist_ok=True)
     
+    poll_ms = int(round(float(meters_cfg.poll_interval_s) * 1000.0))
+    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
     # Find next auto-increment number for this class
     counter = 1
     while True:
-        out_file = out_dir / f"{class_name}_{counter}.csv"
+        out_file = out_dir / f"{class_name}_{counter}_{poll_ms}ms_{run_stamp}.csv"
         if not out_file.exists():
             break
         counter += 1
