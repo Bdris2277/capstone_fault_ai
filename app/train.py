@@ -75,14 +75,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test_csv", default=user_params.TEST_CSV)
     parser.add_argument("--out_dir", default=user_params.ARTIFACTS_DIR)
     parser.add_argument("--target", choices=["class", "location"], default="class")
-    parser.add_argument("--n_estimators", type=int, default=300)
-    parser.add_argument("--max_depth", type=int, default=0, help="0 means unlimited depth.")
-    parser.add_argument("--min_samples_leaf", type=int, default=1)
-    parser.add_argument("--random_state", type=int, default=42)
+    parser.add_argument("--n_estimators", type=int, default=int(getattr(user_params, "RF_N_ESTIMATORS", 300)))
+    parser.add_argument(
+        "--max_depth",
+        type=int,
+        default=int(getattr(user_params, "RF_MAX_DEPTH", 0)),
+        help="0 means unlimited depth.",
+    )
+    parser.add_argument(
+        "--min_samples_leaf",
+        type=int,
+        default=int(getattr(user_params, "RF_MIN_SAMPLES_LEAF", 1)),
+    )
+    parser.add_argument("--random_state", type=int, default=int(getattr(user_params, "RF_RANDOM_STATE", 42)))
     parser.add_argument(
         "--oversample_ratio",
         type=float,
-        default=0.6,
+        default=float(getattr(user_params, "RF_OVERSAMPLE_RATIO", 0.6)),
         help="For class target: upsample each fault class to this ratio of majority class windows (0 disables).",
     )
     args = parser.parse_args(argv)

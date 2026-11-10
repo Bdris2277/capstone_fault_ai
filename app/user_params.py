@@ -46,21 +46,21 @@ FAULT_TYPES = {
 # ============================================================================
 # STEP 2: Collection settings (how long to collect data)
 # ============================================================================
-COLLECT_DURATION_S = 180.0      # Seconds E.g(10 = collect for 10.0 seconds)
+COLLECT_DURATION_S = 120.0      # Seconds E.g(10 = collect for 10.0 seconds)
 
 COLLECT_CLASS_LABEL = 5
 COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_L1_20_1_200.csv). Set to None to disable.
 COLLECT_FAULT_LOCATION = "PhotoVoltaic"  # Fault location label to store in collected CSV
 
-         # Which fault type are you collecting now?
-                                # Change to 1, 2, etc. when you test different faults
-
 # ============================================================================
 # STEP 3: Training settings (how should the model learn)
 # ============================================================================
-EPOCHS = 50              # Training cycles (higher = better, slower)
-BATCH_SIZE = 64          # Samples per cycle (64 is typical)
-LR = 1e-3                # Learning speed (0.001 is typical)
+# RandomForest settings (used by app/train.py)
+RF_N_ESTIMATORS = 400      # More trees = usually better, but slower training
+RF_MAX_DEPTH = 0           # 0 = unlimited depth (stronger, slower)
+RF_MIN_SAMPLES_LEAF = 1    # Higher = smoother model, faster, less overfit
+RF_OVERSAMPLE_RATIO = 0.8  # Fault-class upsampling ratio vs majority class (0 disables)
+RF_RANDOM_STATE = 42
 
 # ============================================================================
 # CONFIG FILES (don't change anything below this line PLEASE)
