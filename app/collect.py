@@ -13,7 +13,7 @@ if __package__ in (None, ""):
 import csv
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +22,11 @@ from capstone_fault_ai.app import user_params
 from capstone_fault_ai.core.config import load_meters_config, load_pipeline_config
 from capstone_fault_ai.core.modbus import poll_holding_registers
 from capstone_fault_ai.core.preprocess import PerUnitState, select_features, to_per_unit
+
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python <=3.10
+    UTC = timezone.utc  # noqa: UP017
 
 
 @dataclass
