@@ -24,23 +24,23 @@ Everything else is automatic.
 FAULT_TYPES = {
     0:  "normal",           # The good/healthy state
 
-    1:  "fault_L1_0",       # Voltage Sag Line 1 0%
-    2:  "fault_L1_20",      # Voltage Sag Line 1 20%
-    3:  "fault_L1_40",      # Voltage Sag Line 1 40%
-    4:  "fault_L1_60",      # Voltage Sag Line 1 60%
-    5:  "fault_L1_100",      # Voltage Sag Line 1 80%
+    1:  "fault_L1_0",       # Voltage Sag 1 phase 0%
+    2:  "fault_L1_20",      # Voltage Sag 1 phase 20%
+    3:  "fault_L1_40",      # Voltage Sag 1 phase 40%
+    4:  "fault_L1_60",      # Voltage Sag 1 phase 60%
+    5:  "fault_L1_100",     # Voltage Sag 1 phase 100%
     
-    6:  "fault_L2_0",       # Voltage Sag Line 2 0%
-    7:  "fault_L2_20",      # Voltage Sag Line 2 20%
-    8:  "fault_L2_40",      # Voltage Sag Line 2 40%
-    9:  "fault_L2_60",      # Voltage Sag Line 2 60%
-    10: "fault_L2_100",      # Voltage Sag Line 2 80%
+    6:  "fault_L2_0",       # Voltage Sag  2 phase 0%
+    7:  "fault_L2_20",      # Voltage Sag  2 phase 20%
+    8:  "fault_L2_40",      # Voltage Sag  2 phase 40%
+    9:  "fault_L2_60",      # Voltage Sag  2 phase 60%
+    10: "fault_L2_100",     # Voltage Sag  2 phase 100%
 
-    11: "fault_L3_0",       # Voltage Sag Line 3 0%
-    12: "fault_L3_20",      # Voltage Sag Line 3 20%
-    13: "fault_L3_40",      # Voltage Sag Line 3 40%
-    14: "fault_L3_60",      # Voltage Sag Line 3 60%
-    15: "fault_L3_100",      # Voltage Sag Line 3 80%
+    11: "fault_L3_0",       # Voltage Sag  3 phase 0%
+    12: "fault_L3_20",      # Voltage Sag  3 phase 20%
+    13: "fault_L3_40",      # Voltage Sag  3 phase 40%
+    14: "fault_L3_60",      # Voltage Sag  3 phase 60%
+    15: "fault_L3_100",     # Voltage Sag  3 phase 100%
 }
 
 # ============================================================================
@@ -48,7 +48,7 @@ FAULT_TYPES = {
 # ============================================================================
 COLLECT_DURATION_S = 120.0      # Seconds E.g(10 = collect for 10.0 seconds)
 
-COLLECT_CLASS_LABEL = 5
+COLLECT_CLASS_LABEL = 10
 COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_L1_20_1_200.csv). Set to None to disable.
 COLLECT_FAULT_LOCATION = "PhotoVoltaic"  # Fault location label to store in collected CSV
 
