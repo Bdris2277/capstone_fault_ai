@@ -45,6 +45,7 @@ FAULT_TYPES = {
     18: "fault_2G_40",      # Voltage Sag Line-to-Ground 40%
     19: "fault_2G_60",      # Voltage Sag Line-to-Ground 60%
     20: "fault_2G_100",     # Voltage Sag Line-to-Ground 100%
+
 }
 
 # ============================================================================
@@ -52,9 +53,9 @@ FAULT_TYPES = {
 # ============================================================================
 COLLECT_DURATION_S = 120.0      # Seconds E.g(10 = collect for 10.0 seconds)
 
-COLLECT_CLASS_LABEL = 10
+COLLECT_CLASS_LABEL = 1
 COLLECT_FILENAME_MS_TAG = 200   # Optional filename suffix in ms (e.g. fault_1_20_1_200.csv). Set to None to disable.
-COLLECT_FAULT_LOCATION = "Wind"  # Fault location label to store in collected CSV
+COLLECT_FAULT_LOCATION = "ConsumerII"  # Fault location label to store in collected CSV
 
 # ============================================================================
 # STEP 3: Training settings (how should the model learn)
