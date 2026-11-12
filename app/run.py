@@ -31,11 +31,30 @@ def show_menu():
     print("4. Train Location Model (RandomForest)")
     print("5. Run Live Inference (Fault Type)")
     print("6. Run Live Inference (Location)")
+    print("7. Set Collection Fault Type")
     print("0. Exit")
     print("="*50)
     
-    choice = input("What do you want to do? (0-6): ").strip()
+    choice = input("What do you want to do? (0-7): ").strip()
     return choice
+
+
+def _prompt_for_fault_label(current_label: int) -> int:
+    print("\nAvailable fault labels:")
+    for k in sorted(user_params.FAULT_TYPES.keys()):
+        print(f"  {k}: {user_params.FAULT_TYPES[k]}")
+    raw = input(f"Enter class label [{current_label}]: ").strip()
+    if not raw:
+        return current_label
+    try:
+        val = int(raw)
+    except ValueError:
+        print("Invalid number. Keeping previous label.")
+        return current_label
+    if val not in user_params.FAULT_TYPES:
+        print("Label not in FAULT_TYPES. Keeping previous label.")
+        return current_label
+    return val
 
 
 def run_full_training_pipeline() -> int:
@@ -96,6 +115,12 @@ def main(argv: list[str] | None = None):
                 return rc
         return run_full_training_pipeline()
 
+    # Session-level collection settings (can be changed from GUI without restart)
+    session_duration = float(user_params.COLLECT_DURATION_S)
+    session_label = int(user_params.COLLECT_CLASS_LABEL)
+    session_ms_tag = getattr(user_params, "COLLECT_FILENAME_MS_TAG", None)
+    session_fault_location = getattr(user_params, "COLLECT_FAULT_LOCATION", None)
+
     while True:
         choice = show_menu()
 
@@ -104,19 +129,33 @@ def main(argv: list[str] | None = None):
             return 0
 
         if choice == "1":
-            duration = user_params.COLLECT_DURATION_S
-            label = user_params.COLLECT_CLASS_LABEL
-            ms_tag = getattr(user_params, "COLLECT_FILENAME_MS_TAG", None)
+            typed = input(f"Enter fault label 1-20 (Enter keeps {session_label}): ").strip()
+            if typed:
+                try:
+                    typed_label = int(typed)
+                except ValueError:
+                    print("Invalid label. Keeping previous value.")
+                else:
+                    if 1 <= typed_label <= 20 and typed_label in user_params.FAULT_TYPES:
+                        session_label = typed_label
+                    else:
+                        print("Label must be between 1 and 20 and exist in FAULT_TYPES. Keeping previous value.")
 
             print("\n" + "="*50)
             print("METER DATA COLLECTION")
             print("="*50)
-            print(f"Duration: {duration}s")
-            print(f"Class label: {label}")
-            print(f"Filename ms tag: {ms_tag}")
+            print(f"Duration: {session_duration}s")
+            print(f"Class label: {session_label} ({user_params.FAULT_TYPES.get(session_label, 'unknown')})")
+            print(f"Fault location: {session_fault_location}")
+            print(f"Filename ms tag: {session_ms_tag}")
             print("="*50 + "\n")
 
-            rc = collect_data(duration_s=duration, class_label=label, filename_ms_tag=ms_tag)
+            rc = collect_data(
+                duration_s=session_duration,
+                class_label=session_label,
+                fault_location=session_fault_location,
+                filename_ms_tag=session_ms_tag,
+            )
             print(f"Collection finished with code: {rc}")
 
         elif choice == "2":
@@ -143,6 +182,10 @@ def main(argv: list[str] | None = None):
             print("\nStarting live inference (location)...")
             rc = infer_main(["--target", "location"])
             print(f"Location inference ended with code: {rc}")
+
+        elif choice == "7":
+            session_label = _prompt_for_fault_label(session_label)
+            print(f"\nCollection fault type set to: {session_label} ({user_params.FAULT_TYPES[session_label]})")
 
         else:
             print("\nInvalid choice")
